@@ -49,7 +49,7 @@ thiserror = "1.0"
 
 # cli / tui
 clap      = { version = "4.5", features = ["derive", "wrap_help"] }
-ratatui   = "0.29"
+ratatui   = "0.30"
 crossterm = "0.28"
 
 # logging
