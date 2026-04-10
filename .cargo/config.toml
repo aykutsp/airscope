@@ -1,0 +1,7 @@
+# Local override so the mingw linker finds Npcap's wpcap.lib when
+# building with `--features live`. Harmless when the feature is off.
+# Full story + the matching wpcap.lib -> libwpcap.a rename step are
+# in docs/INSTALL.md §3.3.2. On other platforms this file is a no-op.
+
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-L", "C:/npcap-sdk/Lib/x64"]

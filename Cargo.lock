@@ -57,6 +57,7 @@ dependencies = [
  "airscope-wifi",
  "anyhow",
  "clap",
+ "if-addrs",
  "tracing",
  "tracing-subscriber",
 ]
@@ -72,6 +73,7 @@ dependencies = [
  "clap",
  "crossterm",
  "humantime",
+ "if-addrs",
  "ratatui",
  "time",
  "tracing",
@@ -473,6 +475,16 @@ name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
+name = "if-addrs"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "69b2eeee38fef3aa9b4cc5f1beea8a2444fc00e7377cafae396de3f5c2065e24"
+dependencies = [
+ "libc",
+ "windows-sys 0.59.0",
+]
 
 [[package]]
 name = "indoc"

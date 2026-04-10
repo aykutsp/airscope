@@ -6,3 +6,14 @@
 *.log
 # node_modules shouldn't appear here, but belts and braces
 node_modules/
+
+# Vendored third-party SDKs pulled in for local builds. Each
+# developer downloads these themselves per docs/INSTALL.md; we
+# don't want megabytes of binaries in the history.
+/vendor/
+
+# Local toolchain overrides that only make sense on one machine
+# (e.g. an absolute path to a Windows Npcap SDK). Keep the
+# committed .cargo/config.toml comment-only, and let people add
+# a gitignored local override if they need to.
+/.cargo/config.local.toml

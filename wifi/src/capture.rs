@@ -255,9 +255,15 @@ pub mod live {
     use super::*;
 
     /// Without the `live` feature the type still exists so binaries
-    /// can refer to it, but every operation returns `Unsupported`.
+    /// can refer to it, but every operation returns `Unsupported` with
+    /// a clear install message. This is not a bug – it's how we keep
+    /// the default build portable.
+    ///
+    /// `linktype` mirrors the real struct's public field so callers
+    /// (like airodump's LiveSource) don't need #[cfg] splits just to
+    /// read it. It stays `0` because we never actually open anything.
     pub struct LiveCapture {
-        _private: (),
+        pub linktype: u32,
     }
 
     #[derive(Debug, Clone)]
@@ -267,26 +273,46 @@ pub mod live {
         pub is_up: bool,
     }
 
+    /// The one message every `Unsupported` error in this module shares.
+    /// Kept as a constant so airodump / aireplay / airbase all print the
+    /// same, auditable text.
+    const NEED_LIVE: &str = "\
+live capture is not available in this build.
+
+on linux:
+  sudo apt install libpcap-dev         # or your distro's equivalent
+  cargo build --release --features \"airscope-airodump/live airscope-aireplay/live airscope-airbase/live airscope-airmon/live\"
+
+on macos:
+  brew install libpcap
+  cargo build --release --features \"airscope-airodump/live airscope-aireplay/live airscope-airbase/live\"
+
+on windows:
+  1) install the npcap runtime from https://npcap.com (tick 'install in winpcap api-compatible mode')
+  2) download the npcap sdk zip and extract it somewhere, e.g. C:\\npcap-sdk
+  3) in the shell where you run cargo, point the linker at the sdk:
+        set LIB=C:\\npcap-sdk\\Lib\\x64
+     (mingw users: also rename wpcap.lib -> libwpcap.a inside Lib\\x64)
+  4) cargo build --release --features \"airscope-airodump/live airscope-aireplay/live\"
+
+full step-by-step, including troubleshooting, in docs/INSTALL.md.";
+
     pub fn list_interfaces() -> Result<Vec<LiveInterface>> {
-        Err(Error::Unsupported(
-            "built without `live` feature - rebuild with `--features live`".into(),
-        ))
+        Err(Error::Unsupported(NEED_LIVE.into()))
     }
 
     impl LiveCapture {
         pub fn open(_interface: &str) -> Result<Self> {
-            Err(Error::Unsupported(
-                "built without `live` feature - rebuild with `--features live`".into(),
-            ))
+            Err(Error::Unsupported(NEED_LIVE.into()))
         }
         pub fn set_filter(&mut self, _filter: &str) -> Result<()> {
-            Err(Error::Unsupported("no live capture".into()))
+            Err(Error::Unsupported(NEED_LIVE.into()))
         }
         pub fn next(&mut self) -> Result<Option<CapturedPacket>> {
-            Err(Error::Unsupported("no live capture".into()))
+            Err(Error::Unsupported(NEED_LIVE.into()))
         }
         pub fn inject(&mut self, _frame: &[u8]) -> Result<()> {
-            Err(Error::Unsupported("no live capture".into()))
+            Err(Error::Unsupported(NEED_LIVE.into()))
         }
     }
 }

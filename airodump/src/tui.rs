@@ -36,6 +36,10 @@ pub struct TuiState {
     pub follow_selected: bool,
     pub started_at: Instant,
     pub iface_label: String,
+    /// A sticky warning shown above the AP table. Used to surface the
+    /// "you're not in monitor mode" situation on Windows so the user
+    /// isn't left staring at an empty table with no explanation.
+    pub warning: Option<String>,
 }
 
 impl TuiState {
@@ -48,6 +52,7 @@ impl TuiState {
             follow_selected: true,
             started_at: Instant::now(),
             iface_label,
+            warning: None,
         }
     }
 
@@ -77,28 +82,73 @@ pub fn poll_event(tick: Duration, state: &mut TuiState) -> std::io::Result<TuiOu
     Ok(TuiOutcome::None)
 }
 
-pub fn draw(
-    frame: &mut Frame<'_>,
-    state: &mut TuiState,
-    scan: &ScanState,
-) {
+pub fn draw(frame: &mut Frame<'_>, state: &mut TuiState, scan: &ScanState) {
     let area = frame.area();
+    // Figure out how many lines the warning will need so we can reserve
+    // the right amount of space; otherwise a long managed-mode banner
+    // would push the tables off the bottom of the terminal.
+    let warning_lines = state
+        .warning
+        .as_deref()
+        .map(|w| 2 + w.lines().count() as u16)
+        .unwrap_or(0);
+
+    let mut constraints = vec![Constraint::Length(4)];
+    if warning_lines > 0 {
+        constraints.push(Constraint::Length(warning_lines));
+    }
+    constraints.push(Constraint::Min(10));
+    constraints.push(Constraint::Length(8));
+    constraints.push(Constraint::Length(1));
+
     let outer = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(4),  // banner
-            Constraint::Min(10),    // AP table
-            Constraint::Length(8),  // stations
-            Constraint::Length(1),  // status bar
-        ])
+        .constraints(constraints)
         .split(area);
 
     draw_banner(frame, outer[0], state, scan);
+    let mut next = 1;
+    if warning_lines > 0 {
+        draw_warning(frame, outer[next], state);
+        next += 1;
+    }
     let aps = scan.aps_sorted();
-    draw_ap_table(frame, outer[1], state, &aps);
+    draw_ap_table(frame, outer[next], state, &aps);
+    next += 1;
     let selected = state.selected_ap(&aps).cloned();
-    draw_stations(frame, outer[2], state, scan, selected.as_ref());
-    draw_status(frame, outer[3], state);
+    draw_stations(frame, outer[next], state, scan, selected.as_ref());
+    next += 1;
+    draw_status(frame, outer[next], state);
+}
+
+fn draw_warning(frame: &mut Frame<'_>, area: Rect, state: &TuiState) {
+    let Some(msg) = state.warning.as_deref() else {
+        return;
+    };
+    let title = Span::styled(
+        " ⚠ heads up ",
+        Style::default()
+            .fg(state.theme.warn)
+            .add_modifier(Modifier::BOLD),
+    );
+    let mut lines: Vec<Line<'_>> = Vec::new();
+    for (i, ln) in msg.lines().enumerate() {
+        let style = if i == 0 {
+            Style::default()
+                .fg(state.theme.warn)
+                .add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Rgb(220, 220, 230))
+        };
+        lines.push(Line::from(Span::styled(ln.to_string(), style)));
+    }
+    let p = Paragraph::new(lines).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(state.theme.warn))
+            .title(title),
+    );
+    frame.render_widget(p, area);
 }
 
 fn draw_banner(

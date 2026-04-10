@@ -37,6 +37,87 @@ you just want a pretty menu.
 
 ---
 
+## requirements
+
+There are **two build modes** with two different requirements profiles.
+Pick the one that matches what you want to do:
+
+### default build — no radio, no SDK
+
+Everything in the suite that doesn't touch a physical Wi-Fi card
+works here: the 802.11 parser, frame builders, pcap file replay,
+pcap writer, the TUI launcher, and `airview`. This is also what CI
+uses.
+
+| thing you need     | how to get it |
+|--------------------|---------------|
+| **Rust ≥ 1.75**    | install via [rustup.rs](https://rustup.rs) |
+| **git**            | any recent version |
+| a terminal with 256-colour + unicode | Windows Terminal / iTerm2 / Alacritty / any modern emulator |
+
+That's it. `cargo build --release` will produce every binary with
+zero extra dependencies, and `airodump --read samples/demo-01.pcap`
+will run on any OS.
+
+### live-capture build — reading packets off a real radio
+
+The moment you want `airodump -i wlan0`, `aireplay` to actually
+inject, or `airbase` to hit the air, you need a packet-capture
+library for your OS. Rebuild with the `live` feature after
+installing the right native package.
+
+| platform           | native dep                                                | monitor mode?            |
+|--------------------|-----------------------------------------------------------|--------------------------|
+| **Linux**          | `libpcap-dev` (apt) / `libpcap-devel` (dnf) / `libpcap` (pacman) | ✅ supported drivers     |
+| **macOS**          | `brew install libpcap`                                    | ⚠️ via Wireless Diagnostics |
+| **Windows (MSVC)** | [Npcap runtime](https://npcap.com) + Npcap SDK            | ⚠️ driver-dependent     |
+| **Windows (mingw)**| Npcap runtime + SDK + one rename trick (see below)        | ⚠️ driver-dependent     |
+
+Then:
+
+```bash
+# linux
+sudo apt install libpcap-dev
+cargo build --release --features "\
+  airscope-airodump/live \
+  airscope-airmon/live \
+  airscope-aireplay/live \
+  airscope-airbase/live"
+sudo ./target/release/airmon start wlan0 --channel 6
+sudo ./target/release/airodump -i wlan0
+```
+
+```powershell
+# windows (msvc)
+# 1. install Npcap runtime from https://npcap.com
+#    (tick "install in WinPcap API-compatible mode")
+# 2. download the Npcap SDK zip and extract to C:\npcap-sdk
+$env:LIB = "C:\npcap-sdk\Lib\x64;$env:LIB"
+cargo build --release --features "airscope-airodump/live airscope-aireplay/live airscope-airbase/live"
+.\target\release\airodump.exe -i "Wi-Fi"
+```
+
+```bash
+# windows (mingw / git-bash)
+# same Npcap runtime install, then:
+cp /c/npcap-sdk/Lib/x64/wpcap.lib /c/npcap-sdk/Lib/x64/libwpcap.a
+# the committed .cargo/config.toml already points rustflags at
+# C:/npcap-sdk/Lib/x64 — adjust if your SDK lives elsewhere
+cargo build --release --features "airscope-airodump/live airscope-aireplay/live airscope-airbase/live"
+./target/release/airodump.exe -i "Wi-Fi"
+```
+
+When the feature is not enabled, live-capture code paths return a
+long, actionable error pointing at [`docs/INSTALL.md`](docs/INSTALL.md)
+instead of a cryptic one — that's not a bug, it's how the default
+build stays portable.
+
+> Full step-by-step (capabilities instead of sudo on Linux, macOS
+> Sniffer mode, Windows driver notes, troubleshooting) is in
+> [`docs/INSTALL.md`](docs/INSTALL.md).
+
+---
+
 ## quick start
 
 ```bash
@@ -53,16 +134,10 @@ cargo build --release
 
 # or the launcher
 ./target/release/airscope
-```
 
-For live capture on a real radio:
-
-```bash
-# linux
-sudo apt install libpcap-dev
-cargo build --release --features "airscope-airodump/live airscope-airmon/live airscope-aireplay/live airscope-airbase/live"
-sudo ./target/release/airmon start wlan0 --channel 6
-sudo ./target/release/airodump -i wlan0
+# find capture targets without touching the live backend
+./target/release/airodump --list-interfaces
+./target/release/airmon list --json
 ```
 
 ---
