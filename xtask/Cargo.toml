@@ -13,4 +13,4 @@ description           = "in-tree build scripts for the Airscope workspace"
 anyhow        = { workspace = true }
 clap          = { workspace = true }
 clap_complete = "4.5"
-clap_mangen   = "0.2"
+clap_mangen   = "0.3"
