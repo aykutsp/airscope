@@ -142,16 +142,238 @@ cargo build --release
 
 ---
 
-## the tools
+## the tools at a glance
 
-| binary     | in one line                                              | needs radio? |
-|------------|----------------------------------------------------------|--------------|
-| `airmon`   | flip a wireless interface into monitor mode and back     | yes (Linux)  |
-| `airodump` | real-time scanner — APs, stations, signal bars, ENC      | live *or* `.pcap` replay |
-| `aireplay` | craft / inspect / inject 802.11 management frames        | only for injection |
-| `airbase`  | broadcast beacons for one or many fake SSIDs             | only for transmission |
-| `airview`  | offline pcap browser with an 802.11-aware decoder        | no |
-| `airscope` | unified launcher TUI that spawns the tool you pick       | no |
+| binary     | one line                                              | replaces                 | needs a radio?              |
+|------------|-------------------------------------------------------|--------------------------|-----------------------------|
+| `airmon`   | monitor-mode manager + interface inventory            | `airmon-ng`              | only for `start`/`stop`     |
+| `airodump` | real-time 802.11 scanner with TUI + pcap replay       | `airodump-ng`            | live **or** `.pcap` replay  |
+| `aireplay` | frame crafter + inspector + injector                  | `aireplay-ng`            | only to inject on air       |
+| `airbase`  | beacon / soft-AP broadcaster                          | `airbase-ng`             | only to transmit on air     |
+| `airview`  | offline pcap browser with 802.11 decoder              | mini `tshark` / Wireshark | no                          |
+| `airscope` | unified launcher TUI across the five tools above      | *(no equivalent)*        | no                          |
+
+Every tool is its own binary, so you can script them individually,
+pipe them, package them, or drop the launcher without losing any
+functionality.
+
+---
+
+## the tools in detail
+
+### `airmon` — monitor-mode manager
+
+Airscope's equivalent of **airmon-ng**. Does three things:
+
+1. **lists every network interface** the OS reports, with a best-effort
+   wireless/loopback/ethernet tag. Uses `if-addrs` under the hood so
+   this works on Linux, macOS, and Windows *without* libpcap or Npcap.
+2. **switches a radio into monitor mode** (and back into managed mode)
+   on Linux by wrapping `ip link` + `iw`. That's a deliberate scope
+   choice: reimplementing those tools' driver-quirk handling would
+   buy nothing.
+3. **reports the current mode** of an interface — a quick sanity
+   check before you start a scanner.
+
+```bash
+airmon list                       # machine-friendly table
+airmon list --json                # same info as JSON for scripting
+sudo airmon start wlan0           # drop into monitor mode
+sudo airmon start wlan0 -c 6      # ... and lock to channel 6
+airmon status wlan0               # what am I in right now?
+sudo airmon stop wlan0            # back to managed
+```
+
+**Different from `airmon-ng`:**
+- Single static Rust binary, no bash wrapper over `lsusb`/`lsmod`.
+- `list` works on every OS, always — even when the `live` feature
+  is off and libpcap isn't installed.
+- Native `--json` output so you can pipe it into `jq`, Ansible, or
+  a dashboard.
+- On Linux, queries both `if-addrs` *and* `/sys/class/net/<dev>/wireless`
+  so cfg80211 cards show up with `kind=wifi` even when they're not
+  currently up.
+
+---
+
+### `airodump` — the scanner
+
+The showpiece of the suite. Drop-in mental model for **airodump-ng**,
+but with a modern ratatui TUI, offline pcap replay as a first-class
+mode, a headless JSON output, and a pcap writer.
+
+Two sources:
+- `-i <iface>` — live capture on a monitor-mode radio.
+- `-r <file.pcap>` — replay any `.pcap` file at any speed.
+
+Three output modes:
+- **TUI** (default): banner, live counters (BCN/DATA/PRB/DEAU/BADFCS),
+  AP table with real signal bars and the ENC column, and a station
+  table that follows whichever AP you've highlighted.
+- **`--no-tui --format table`**: airodump-ng style one-shot snapshot,
+  great for CI.
+- **`--no-tui --format json`**: machine-readable; pipe straight into
+  `jq` or a dashboard backend.
+
+```bash
+airodump --list-interfaces        # pick your capture target first
+sudo airodump -i wlan0            # live scan (Linux, monitor mode)
+airodump -r samples/demo-01.pcap  # offline replay - works on any OS
+airodump -r demo.pcap --rate 10   # 10x playback speed
+airodump -i wlan0 --write out.pcap  # record while you watch
+airodump -r demo.pcap --no-tui --format json | jq '.access_points[0]'
+```
+
+**Different from `airodump-ng`:**
+- **Modern TUI** with signal bars, sticky warnings, and a station
+  pane that reacts to the currently-selected AP.
+- **Offline replay is a first-class mode.** You can demo, test, and
+  teach the tool without a radio — `samples/demo-01.pcap` ships in
+  the repo.
+- **Fuzzy interface matching**: on Windows you can pass `-i "Wi-Fi"`
+  and airodump will resolve it to the correct `\Device\NPF_{GUID}`
+  via pcap's description list. No more copying and pasting 36-char
+  identifiers.
+- **Linktype-aware warnings**: if the backend hands us cooked
+  Ethernet frames (the default on Windows without a monitor-mode
+  driver), a yellow banner appears **inside the TUI** explaining
+  exactly why the tables are empty and what to do.
+- **`--write` is byte-perfect libpcap.** The output file re-imports
+  cleanly into airodump, airview, tshark, or Wireshark.
+- **`--format json`** ships native; no XML, no CSV round-trips.
+
+---
+
+### `aireplay` — the frame crafter + injector
+
+Equivalent to **aireplay-ng** in scope, but split into explicit
+subcommands and **dry-run by default**. A one-liner produces a hex
+dump of the frame; injection only happens when you pass `--interface`.
+That makes the tool safe to use in docs, CI, and classrooms without
+any risk of accidentally transmitting on a real radio.
+
+Subcommands:
+- `deauth` — build an 802.11 deauthentication frame targeting a
+  specific client (or broadcast) under a given BSSID and reason code.
+- `probe` — build an 802.11 probe request for a given SSID (or a
+  wildcard). Source MAC defaults to a random locally-administered one.
+- `inspect` — take a hex-encoded frame and print the decoded fields.
+  Useful when you just got a dump from tshark and want to know what
+  it is without loading Wireshark.
+
+```bash
+# dry-run: craft the frame, print it, don't transmit
+aireplay deauth --client ff:ff:ff:ff:ff:ff --bssid AA:BB:CC:DD:EE:FF
+
+# actually transmit on a monitor-mode interface
+sudo aireplay -i wlan0 -c 10 --delay-ms 50 \
+    deauth --client 11:22:33:44:55:66 --bssid AA:BB:CC:DD:EE:FF
+
+# probe for a specific SSID
+aireplay probe --ssid "CoffeeShop_5G"
+
+# decode a frame you got from somewhere else
+aireplay inspect c0003a01ffffffffffffaabbccddeeffaabbccddeeff00000100
+```
+
+**Different from `aireplay-ng`:**
+- **Dry-run by default.** No surprises: nothing goes on the air
+  unless you pass `--interface`.
+- **`inspect` is new.** aireplay-ng has no equivalent — for
+  introspection you'd have to reach for Wireshark. Here, every
+  subcommand has a symmetric decoder.
+- **Explicit subcommands** instead of flag-soup.
+- All reason codes are named Rust enums, so `--reason 7` is
+  validated, not silently truncated.
+
+---
+
+### `airbase` — the beacon / soft-AP generator
+
+Equivalent to the `--essids` mode of **airbase-ng**: broadcast
+beacons for one or many SSIDs at the standard 100 TU interval with
+deterministic BSSIDs per SSID (same `--ssid` list → same frames
+every run). Ideal for lab work, SSID tests, and client-behaviour
+experiments.
+
+```bash
+# dry-run - build and print the frames, don't touch a radio
+airbase -s FreeWiFi -s CoffeeShop -c 6
+
+# actually transmit on Linux monitor mode
+sudo airbase -i wlan0mon -s FreeWiFi -s CoffeeShop -c 6
+
+# advertise as WEP (Privacy bit set in the capability field)
+sudo airbase -i wlan0mon -s Retro -c 1 --privacy
+
+# run for exactly 30 seconds then stop cleanly
+sudo airbase -i wlan0mon -s Lab -c 6 --duration 30
+```
+
+**Different from `airbase-ng`:**
+- **Deterministic BSSIDs.** A fixed `--ssid` list always produces
+  the same BSSIDs, which makes regression tests and demo videos
+  reproducible.
+- **Dry-run first.** Running without `-i` is fine; it prints the
+  first crafted frame as hex and describes every SSID that would
+  be broadcast.
+- **Ctrl-C / `--duration` are clean**: airbase prints the total
+  frame count on exit so you know exactly what landed on the air.
+- **No full rogue-AP stack.** By design: `airbase` is a beacon
+  generator, not a hostapd replacement. If you need DHCP + HTTP +
+  a captive portal, wire airbase's beacons to a user-mode AP.
+
+---
+
+### `airview` — the offline pcap browser
+
+Think of this as a **mini Wireshark scoped to 802.11**. A single
+binary that opens any `.pcap` / `.pcapng` file, walks the frames,
+and shows you a table + a decoded detail pane with a hex+ASCII dump.
+No Qt, no Lua, no 200 MB install.
+
+```bash
+airview samples/demo-01.pcap                      # interactive TUI
+airview --dump samples/demo-01.pcap               # text summary
+airview --filter beacon samples/demo-01.pcap      # only beacons
+airview --filter deauth samples/wireshark-dump.pcap
+```
+
+Supported kind filters: `beacon`, `probe_req`, `probe_resp`, `probe`,
+`auth`, `deauth`, `assoc`, `data`, `ctrl`, `any`.
+
+In the TUI:
+- `↑ / ↓` / `j / k` — walk through frames
+- `g` / `G` — jump to the first / last frame
+- `q` / `Esc` — quit
+
+**Different from `tshark` / Wireshark:**
+- Zero GUI dependency. Single static Rust binary you can drop on
+  any host.
+- 802.11-aware by default: radiotap is stripped, management-frame
+  IEs (SSID, DS param set, RSN, vendor WPA1) are decoded for the
+  detail pane.
+- No dissector plugin system — if the decode isn't in `wifi/src/frame.rs`
+  the field doesn't show up. That's the trade-off for a ~1 MB binary
+  you can `scp` to an embedded box.
+
+---
+
+### `airscope` — the unified launcher
+
+There's no aircrack-ng equivalent for this one. It's a small ratatui
+picker that lists the five tools above, shows each one's description
+and a canonical example invocation, and `exec`s the binary you
+select. Nothing magic — if you don't want the launcher, every tool
+is still its own CLI.
+
+```bash
+airscope    # pick a tool from the menu, press Enter
+```
+
+Keybindings: `↑/↓` to navigate, `Enter` or `Space` to launch, `q` to
+quit. The launcher leaves the alternate screen before spawning the
+child so the child's TUI takes over cleanly.
 
 ---
 
