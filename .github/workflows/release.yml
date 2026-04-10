@@ -99,7 +99,7 @@ jobs:
           $hash = (Get-FileHash "dist/$stage.zip" -Algorithm SHA256).Hash.ToLower()
           "$hash  $stage.zip" | Out-File -Encoding ascii "dist/$stage.zip.sha256"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: airscope-${{ matrix.target }}
           path: dist/*
