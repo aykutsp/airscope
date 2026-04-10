@@ -7,7 +7,7 @@
 <p align="center">
   <a href="https://github.com/aykutsp/airscope/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/aykutsp/airscope/ci.yml?branch=master&style=flat-square&label=ci&logo=github"></a>
   <a href="https://github.com/aykutsp/airscope/actions/workflows/audit.yml"><img alt="audit" src="https://img.shields.io/github/actions/workflow/status/aykutsp/airscope/audit.yml?branch=master&style=flat-square&label=audit&logo=github"></a>
-  <a href="https://www.rust-lang.org/"><img alt="rust" src="https://img.shields.io/badge/rust-1.75%2B-dea584?style=flat-square&logo=rust&logoColor=white"></a>
+  <a href="https://www.rust-lang.org/"><img alt="rust" src="https://img.shields.io/badge/rust-1.85%2B-dea584?style=flat-square&logo=rust&logoColor=white"></a>
   <img alt="platforms" src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-555?style=flat-square">
   <img alt="unsafe" src="https://img.shields.io/badge/unsafe-forbidden-success?style=flat-square">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square"></a>
@@ -72,7 +72,7 @@ uses.
 
 | thing you need     | how to get it |
 |--------------------|---------------|
-| **Rust ≥ 1.75**    | install via [rustup.rs](https://rustup.rs) |
+| **Rust ≥ 1.85**    | install via [rustup.rs](https://rustup.rs) |
 | **git**            | any recent version |
 | a terminal with 256-colour + unicode | Windows Terminal / iTerm2 / Alacritty / any modern emulator |
 
@@ -572,7 +572,7 @@ cargo build --workspace --features "airscope-airodump/live airscope-airmon/live"
 |-----|--------|---------|
 | `cargo check / clippy / test (no live)` | ubuntu, macos, windows | fmt + `clippy -D warnings` + test + sample-pcap smoke test |
 | `linux + live capture feature` | ubuntu | `libpcap-dev` install + clippy + build with `--features live` |
-| `MSRV (1.75)` | ubuntu | guards the pinned minimum Rust version |
+| `MSRV (1.85)` | ubuntu | guards the pinned minimum Rust version |
 | `benchmarks compile` | ubuntu | catches regressions in the criterion harness |
 | `cargo audit` | ubuntu | security advisory check on every push + weekly cron |
 | `cargo deny` | ubuntu | license + duplicate-version + source gate |

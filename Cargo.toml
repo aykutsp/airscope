@@ -31,7 +31,10 @@ default-members = [
 [workspace.package]
 version      = "0.2.0"
 edition      = "2021"
-rust-version = "1.75"
+# 1.85 is where `edition = "2024"` stabilised in Cargo; several of our
+# transitive deps already need it, so dropping below this is a
+# non-starter. The MSRV job in CI guards this exact version.
+rust-version = "1.85"
 authors      = ["Aykut Supurtulu"]
 license      = "MIT"
 repository   = "https://github.com/aykutsp/airscope"

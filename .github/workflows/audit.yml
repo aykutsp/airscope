@@ -29,7 +29,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: install libpcap
+        run: sudo apt-get update && sudo apt-get install -y libpcap-dev
       - uses: EmbarkStudios/cargo-deny-action@v2
         with:
           command: check
-          arguments: --all-features
+          # `--all-features` would try to enable `live`, which pulls
+          # pcap and its transitive duplicate chains into the graph.
+          # Default-feature scan is what we actually want to enforce.
+          arguments: ""

@@ -45,14 +45,19 @@ allow = [
 
 [bans]
 # Duplicate crates are allowed but flagged — usually this is proc-macro
-# pulls that can't be avoided.
+# pulls that can't be avoided. We run cargo-deny in CI with
+# `--deny warnings` OFF so the audit workflow doesn't fail on transitive
+# duplicates we can't fix (see audit.yml).
 multiple-versions = "warn"
 wildcards = "deny"
 highlight = "all"
-# The only place we use OpenSSL is transitively through the pcap crate.
-# If something else starts pulling it in we want to know.
 deny = []
-skip = []
+skip = [
+    # pcap still pulls thiserror 1.x through its build chain; our own
+    # crates use 2.x. This is a transitive drag we can't fix from here.
+    { name = "thiserror", version = "1" },
+    { name = "thiserror-impl", version = "1" },
+]
 skip-tree = []
 
 [sources]

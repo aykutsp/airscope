@@ -221,11 +221,15 @@ pub mod live {
         /// to stay clear of [`std::iter::Iterator::next`].
         pub fn next_packet(&mut self) -> Result<Option<CapturedPacket>> {
             match self.cap.next_packet() {
-                Ok(p) => Ok(Some(CapturedPacket {
-                    timestamp_micros: p.header.ts.tv_sec as i64 * 1_000_000
-                        + p.header.ts.tv_usec as i64,
-                    data: p.data.to_vec(),
-                })),
+                Ok(p) => {
+                    // `tv_sec` / `tv_usec` are i64 on 64-bit Linux but i32
+                    // on Windows and 32-bit targets; we widen everything to
+                    // i64 explicitly. Clippy's `unnecessary_cast` lint fires
+                    // on the Linux case only, so we silence it per-site.
+                    #[allow(clippy::unnecessary_cast)]
+                    let ts = (p.header.ts.tv_sec as i64) * 1_000_000 + (p.header.ts.tv_usec as i64);
+                    Ok(Some(CapturedPacket { timestamp_micros: ts, data: p.data.to_vec() }))
+                }
                 Err(pcap::Error::TimeoutExpired) => Ok(None),
                 Err(e) => Err(Error::Capture(e.to_string())),
             }

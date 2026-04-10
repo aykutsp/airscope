@@ -275,7 +275,7 @@ fn draw_stations(
         .into_iter()
         .filter(|s| {
             !state.follow_selected
-                || selected.map(|ap| s.bssid.map_or(true, |b| b == ap.bssid)).unwrap_or(true)
+                || selected.map(|ap| s.bssid.is_none_or(|b| b == ap.bssid)).unwrap_or(true)
         })
         .take(8)
         .collect();
