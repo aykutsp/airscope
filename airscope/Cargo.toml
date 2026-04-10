@@ -1,0 +1,22 @@
+[package]
+name        = "airscope"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace= true
+authors.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+description = "Unified TUI launcher for the Airscope suite"
+
+[[bin]]
+name = "airscope"
+path = "src/main.rs"
+
+[dependencies]
+airscope-core = { workspace = true }
+airscope-ui   = { workspace = true }
+
+anyhow    = { workspace = true }
+clap      = { workspace = true }
+ratatui   = { workspace = true }
+crossterm = { workspace = true }

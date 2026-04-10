@@ -1,0 +1,27 @@
+[package]
+name        = "airscope-wifi"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace= true
+authors.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+description = "802.11 frame parsing, frame building, and capture helpers for Airscope"
+
+[features]
+default = []
+# Enable live capture / injection via libpcap (Linux) or Npcap (Windows).
+# Without this feature the crate is pure CPU code and builds everywhere.
+live = ["dep:pcap"]
+
+[dependencies]
+airscope-core = { workspace = true }
+byteorder     = { workspace = true }
+crc32fast     = { workspace = true }
+hex           = { workspace = true }
+rand          = { workspace = true }
+thiserror     = { workspace = true }
+time          = { workspace = true }
+tracing       = { workspace = true }
+
+pcap = { workspace = true, optional = true }

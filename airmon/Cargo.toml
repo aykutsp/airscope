@@ -1,0 +1,28 @@
+[package]
+name        = "airscope-airmon"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace= true
+authors.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+description = "Toggle wireless interfaces into monitor mode"
+
+[[bin]]
+name = "airmon"
+path = "src/main.rs"
+
+[features]
+default = []
+# Pull in the live-capture backend. Needs libpcap on Linux or Npcap on
+# Windows; leave it off if you only want dry-run / inspect workflows.
+#   cargo build -p airscope-airmon --features live
+live = ["airscope-wifi/live"]
+
+[dependencies]
+airscope-core = { workspace = true }
+airscope-wifi = { workspace = true }
+anyhow    = { workspace = true }
+clap      = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }

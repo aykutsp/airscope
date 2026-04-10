@@ -1,0 +1,34 @@
+[package]
+name        = "airscope-airodump"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace= true
+authors.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+description = "Real-time 802.11 scanner with a TUI, modelled on airodump-ng"
+
+[[bin]]
+name = "airodump"
+path = "src/main.rs"
+
+[features]
+default = []
+# Pull in libpcap / Npcap for live monitor-mode capture. Without this
+# feature airodump still works as a pcap replayer, which is why we
+# don't make it default.
+live = ["airscope-wifi/live"]
+
+[dependencies]
+airscope-core = { workspace = true }
+airscope-wifi = { workspace = true }
+airscope-ui   = { workspace = true }
+
+anyhow    = { workspace = true }
+clap      = { workspace = true }
+ratatui   = { workspace = true }
+crossterm = { workspace = true }
+tracing   = { workspace = true }
+tracing-subscriber = { workspace = true }
+time      = { workspace = true }
+humantime = { workspace = true }

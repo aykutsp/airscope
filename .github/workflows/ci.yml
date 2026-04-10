@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  check:
+    name: cargo check / test (no live)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
+      - name: cargo check
+        run: cargo check --workspace --all-targets
+      - name: cargo test
+        run: cargo test --workspace
+      - name: build sample demo
+        run: cargo run -p airscope-wifi --example make_sample
+      - name: exercise airodump on the sample
+        shell: bash
+        run: |
+          cargo run -p airscope-airodump -- --no-tui --read samples/demo-01.pcap --duration 1 --rate 100
+
+  live-linux:
+    name: linux + live capture feature
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: install libpcap
+        run: sudo apt-get update && sudo apt-get install -y libpcap-dev
+      - name: cargo build --features live
+        run: cargo build --workspace --features "airscope-airodump/live airscope-airmon/live airscope-aireplay/live airscope-airbase/live"

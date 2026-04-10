@@ -1,0 +1,8 @@
+/target
+/.idea
+/.vscode
+*.swp
+*.swo
+*.log
+# node_modules shouldn't appear here, but belts and braces
+node_modules/

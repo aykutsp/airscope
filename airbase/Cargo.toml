@@ -1,0 +1,26 @@
+[package]
+name        = "airscope-airbase"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace= true
+authors.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+description = "Soft access point frame generator - airbase-ng in Rust"
+
+[[bin]]
+name = "airbase"
+path = "src/main.rs"
+
+[features]
+default = []
+live = ["airscope-wifi/live"]
+
+[dependencies]
+airscope-core = { workspace = true }
+airscope-wifi = { workspace = true }
+anyhow    = { workspace = true }
+clap      = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio     = { workspace = true }

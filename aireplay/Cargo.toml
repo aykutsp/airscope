@@ -1,0 +1,28 @@
+[package]
+name        = "airscope-aireplay"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace= true
+authors.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+description = "Frame builder and injector - aireplay-ng in Rust"
+
+[[bin]]
+name = "aireplay"
+path = "src/main.rs"
+
+[features]
+default = []
+# Enable injection via libpcap / Npcap. Without the feature aireplay
+# still crafts and inspects frames, it just can't put them on the air.
+live = ["airscope-wifi/live"]
+
+[dependencies]
+airscope-core = { workspace = true }
+airscope-wifi = { workspace = true }
+anyhow = { workspace = true }
+clap   = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true }
+hex    = { workspace = true }

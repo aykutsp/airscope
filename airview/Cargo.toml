@@ -1,0 +1,23 @@
+[package]
+name        = "airscope-airview"
+version.workspace     = true
+edition.workspace     = true
+rust-version.workspace= true
+authors.workspace     = true
+license.workspace     = true
+repository.workspace  = true
+description = "Offline pcap browser with an 802.11-aware decoder"
+
+[[bin]]
+name = "airview"
+path = "src/main.rs"
+
+[dependencies]
+airscope-core = { workspace = true }
+airscope-wifi = { workspace = true }
+airscope-ui   = { workspace = true }
+
+anyhow    = { workspace = true }
+clap      = { workspace = true }
+ratatui   = { workspace = true }
+crossterm = { workspace = true }

@@ -1,0 +1,70 @@
+[workspace]
+resolver = "2"
+members = [
+    "core",
+    "wifi",
+    "ui",
+    "airmon",
+    "airodump",
+    "aireplay",
+    "airbase",
+    "airview",
+    "airscope",
+]
+
+# Keep a shared set of defaults so each crate's own Cargo.toml can stay
+# focused on what actually makes that crate different.
+[workspace.package]
+version      = "0.2.0"
+edition      = "2021"
+rust-version = "1.75"
+authors      = ["Aykut Supurtulu"]
+license      = "MIT"
+repository   = "https://github.com/aykutsp/airscope"
+readme       = "README.md"
+
+[workspace.dependencies]
+# intra-workspace libs
+airscope-core = { path = "core",  version = "0.2.0" }
+airscope-wifi = { path = "wifi",  version = "0.2.0" }
+airscope-ui   = { path = "ui",    version = "0.2.0" }
+
+# errors
+anyhow    = "1.0"
+thiserror = "1.0"
+
+# cli / tui
+clap      = { version = "4.5", features = ["derive", "wrap_help"] }
+ratatui   = "0.29"
+crossterm = "0.28"
+
+# logging
+tracing            = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+
+# async runtime (only the tools that need it pull it in)
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "signal", "time", "sync"] }
+
+# byte juggling
+byteorder = "1.5"
+crc32fast = "1.4"
+hex       = "0.4"
+rand      = "0.8"
+
+# misc
+time      = { version = "0.3", features = ["formatting", "macros"] }
+humantime = "2.1"
+
+# live capture / injection — optional, feature-gated in `wifi`
+pcap = "2.2"
+
+[profile.release]
+opt-level     = 3
+lto           = "thin"
+codegen-units = 1
+strip         = "symbols"
+panic         = "abort"
+
+[profile.dev]
+opt-level = 1
+debug     = 1
