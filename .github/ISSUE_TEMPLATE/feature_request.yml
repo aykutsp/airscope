@@ -1,0 +1,53 @@
+name: feature request
+description: suggest a new capability or an improvement to an existing one
+title: "[feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Start from the use case, not the feature. "I want to do X but ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: What would the tool do if this existed?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Which tool does this affect?
+      multiple: true
+      options:
+        - airscope (launcher)
+        - airmon
+        - airodump
+        - aireplay
+        - airbase
+        - airview
+        - shared library (core / wifi / ui)
+        - build / ci / docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What else did you look at? Why didn't it work?
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and docs/TODO.md.
+          required: true
+        - label: This is not about enabling cracking / key recovery.
+          required: true

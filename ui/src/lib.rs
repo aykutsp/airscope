@@ -5,6 +5,8 @@
 //! that uses it, so the shared surface stays cheap to change.
 
 #![deny(rust_2018_idioms)]
+#![warn(missing_debug_implementations)]
+#![forbid(unsafe_code)]
 
 use std::io::{self, Stdout};
 
@@ -126,6 +128,13 @@ pub fn body_with_status(area: Rect) -> (Rect, Rect) {
 /// the cooked terminal state even if the caller panics.
 pub struct TerminalGuard {
     pub terminal: Terminal<CrosstermBackend<Stdout>>,
+}
+
+impl std::fmt::Debug for TerminalGuard {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // `Terminal` is not itself `Debug`, so just print the type name.
+        f.debug_struct("TerminalGuard").finish_non_exhaustive()
+    }
 }
 
 impl TerminalGuard {

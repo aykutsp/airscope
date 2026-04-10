@@ -1,0 +1,35 @@
+name: audit
+
+# Runs cargo-audit + cargo-deny on every push, every PR, and on a
+# weekly schedule so a new advisory doesn't sit unnoticed between
+# commits.
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+  schedule:
+    - cron: "23 4 * * 1" # monday 04:23 UTC
+  workflow_dispatch:
+
+jobs:
+  cargo-audit:
+    name: cargo audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: install cargo-audit
+        run: cargo install --locked cargo-audit || true
+      - name: run cargo audit
+        run: cargo audit --deny warnings
+
+  cargo-deny:
+    name: cargo deny
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          arguments: --all-features

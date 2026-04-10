@@ -1,10 +1,11 @@
 //! A tiny trait that hides "where do frames come from" from the TUI.
 //!
 //! Two implementations live here:
-//!   - [`LiveSource`]  : wraps `airscope_wifi::capture::live::LiveCapture`
-//!   - [`ReplaySource`]: pumps a pcap file in real-ish time, so the
-//!                       scanner can be demoed on a machine that isn't
-//!                       anywhere near a Wi-Fi card.
+//!
+//! - [`LiveSource`] wraps `airscope_wifi::capture::live::LiveCapture`.
+//! - [`ReplaySource`] pumps a pcap file in real-ish time, so the
+//!   scanner can be demoed on a machine that isn't anywhere near a
+//!   Wi-Fi card.
 //!
 //! Both return `Ok(None)` when nothing is ready right now, so the TUI
 //! can stay responsive to keystrokes.
@@ -19,7 +20,7 @@ use airscope_wifi::capture::{
 
 pub trait FrameSource {
     fn linktype(&self) -> u32;
-    fn next(&mut self) -> Result<Option<CapturedPacket>>;
+    fn next_packet(&mut self) -> Result<Option<CapturedPacket>>;
 }
 
 /// A live interface.
@@ -41,7 +42,7 @@ impl LiveSource {
     pub fn new(interface: &str) -> Result<Self> {
         // First try the exact name the user gave us.
         match LiveCapture::open(interface) {
-            Ok(cap) => return Ok(Self::wrap(cap)),
+            Ok(cap) => Ok(Self::wrap(cap)),
             Err(first_err) => {
                 // Fuzzy match: look at every pcap device and find one whose
                 // name or description contains the user's string (case
@@ -160,8 +161,8 @@ impl FrameSource for LiveSource {
     fn linktype(&self) -> u32 {
         self.linktype
     }
-    fn next(&mut self) -> Result<Option<CapturedPacket>> {
-        self.inner.next()
+    fn next_packet(&mut self) -> Result<Option<CapturedPacket>> {
+        self.inner.next_packet()
     }
 }
 
@@ -193,7 +194,7 @@ impl FrameSource for ReplaySource {
         self.reader.linktype
     }
 
-    fn next(&mut self) -> Result<Option<CapturedPacket>> {
+    fn next_packet(&mut self) -> Result<Option<CapturedPacket>> {
         if self.next_pkt.is_none() {
             self.next_pkt = self.reader.next_packet()?;
         }

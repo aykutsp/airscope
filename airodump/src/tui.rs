@@ -40,6 +40,9 @@ pub struct TuiState {
     /// "you're not in monitor mode" situation on Windows so the user
     /// isn't left staring at an empty table with no explanation.
     pub warning: Option<String>,
+    /// Set by the channel hopper every time it moves the radio. Rendered
+    /// next to the banner so the user knows which channel is live.
+    pub current_channel: Option<u16>,
 }
 
 impl TuiState {
@@ -53,6 +56,7 @@ impl TuiState {
             started_at: Instant::now(),
             iface_label,
             warning: None,
+            current_channel: None,
         }
     }
 
@@ -144,10 +148,11 @@ fn draw_warning(frame: &mut Frame<'_>, area: Rect, state: &TuiState) {
 fn draw_banner(frame: &mut Frame<'_>, area: Rect, state: &TuiState, scan: &ScanState) {
     let uptime = state.started_at.elapsed();
     let c = &scan.counters;
+    let channel_label = state.current_channel.map(|n| format!("CH {n}  ")).unwrap_or_default();
     let sub = Paragraph::new(vec![
         Line::from(vec![
             Span::styled(
-                format!("airodump  "),
+                "airodump  ",
                 Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD),
             ),
             Span::styled(
@@ -157,7 +162,7 @@ fn draw_banner(frame: &mut Frame<'_>, area: Rect, state: &TuiState, scan: &ScanS
             Span::raw("   "),
             Span::styled(
                 format!(
-                    "BCN {}  DATA {}  PRB {}  DEAU {}  BADFCS {}  •  {}s",
+                    "{channel_label}BCN {}  DATA {}  PRB {}  DEAU {}  BADFCS {}  •  {}s",
                     c.beacons,
                     c.data,
                     c.probes,

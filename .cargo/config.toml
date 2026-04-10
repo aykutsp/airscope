@@ -1,7 +1,19 @@
-# Local override so the mingw linker finds Npcap's wpcap.lib when
-# building with `--features live`. Harmless when the feature is off.
-# Full story + the matching wpcap.lib -> libwpcap.a rename step are
-# in docs/INSTALL.md §3.3.2. On other platforms this file is a no-op.
+# Workspace-level cargo config.
+#
+# Two things live here:
+#
+# 1. A target-specific rustflag so the mingw linker can find Npcap's
+#    wpcap.lib when you build `--features live` on Windows (x86_64-gnu).
+#    Harmless on every other target / feature combo. Full context and
+#    the matching `wpcap.lib -> libwpcap.a` rename are in
+#    docs/INSTALL.md §3.3.2.
+#
+# 2. Cargo aliases so `cargo xtask <command>` maps to the in-tree
+#    build-script crate (see xtask/src/main.rs). Same pattern as rustc,
+#    wasmtime, probe-rs, and most non-trivial Rust workspaces.
+
+[alias]
+xtask = "run --quiet --package xtask --"
 
 [target.x86_64-pc-windows-gnu]
 rustflags = ["-L", "C:/npcap-sdk/Lib/x64"]

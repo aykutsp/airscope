@@ -16,6 +16,8 @@
 //! When you enable the `live` feature, the tool additionally queries
 //! pcap so the output agrees with what the capture backend sees.
 
+#![forbid(unsafe_code)]
+
 use std::collections::BTreeMap;
 use std::net::IpAddr;
 #[cfg(target_os = "linux")]

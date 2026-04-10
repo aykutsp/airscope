@@ -10,6 +10,20 @@ members = [
     "airbase",
     "airview",
     "airscope",
+    "xtask",
+]
+# xtask is a dev-only helper; users running `cargo run` / `cargo
+# install` shouldn't see it in the default metadata.
+default-members = [
+    "core",
+    "wifi",
+    "ui",
+    "airmon",
+    "airodump",
+    "aireplay",
+    "airbase",
+    "airview",
+    "airscope",
 ]
 
 # Keep a shared set of defaults so each crate's own Cargo.toml can stay

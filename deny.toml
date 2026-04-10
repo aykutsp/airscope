@@ -1,0 +1,62 @@
+# cargo-deny configuration.
+#
+# Run locally with `cargo deny check`. CI runs this on every push.
+# Format documented at https://embarkstudios.github.io/cargo-deny/.
+
+[graph]
+targets = [
+    { triple = "x86_64-unknown-linux-gnu" },
+    { triple = "x86_64-apple-darwin" },
+    { triple = "aarch64-apple-darwin" },
+    { triple = "x86_64-pc-windows-msvc" },
+    { triple = "x86_64-pc-windows-gnu" },
+]
+all-features = false
+no-default-features = false
+
+[advisories]
+# Deny any package with an open security advisory unless explicitly
+# ignored below. Expect this list to be empty most of the time.
+version = 2
+yanked = "warn"
+ignore = []
+
+[licenses]
+# Whitelist only permissive licenses compatible with MIT. Anything
+# else is a hard fail so a surprise dependency can't quietly pull in
+# a copyleft licence.
+version = 2
+confidence-threshold = 0.9
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+    "Zlib",
+    "CC0-1.0",
+    "0BSD",
+    "BSL-1.0",
+    "MPL-2.0",
+]
+
+[bans]
+# Duplicate crates are allowed but flagged — usually this is proc-macro
+# pulls that can't be avoided.
+multiple-versions = "warn"
+wildcards = "deny"
+highlight = "all"
+# The only place we use OpenSSL is transitively through the pcap crate.
+# If something else starts pulling it in we want to know.
+deny = []
+skip = []
+skip-tree = []
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

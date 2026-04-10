@@ -1,0 +1,130 @@
+name: release
+
+# Runs whenever a `v*` tag is pushed. Builds release artifacts for
+# Linux (x86_64), macOS (x86_64 + aarch64), and Windows (x86_64),
+# bundles every Airscope binary into a per-platform archive, and
+# attaches them to a GitHub Release.
+#
+# Live-capture features are intentionally NOT enabled here — the
+# prebuilt binaries target users who want to try the suite without
+# installing libpcap / Npcap. Anyone who wants live capture still
+# builds from source per docs/INSTALL.md.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "tag to build and release (e.g. v0.2.1)"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARIES: "airscope airmon airodump aireplay airbase airview"
+
+jobs:
+  build:
+    name: build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            archive: tar.gz
+            exe_suffix: ""
+          - target: x86_64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+            exe_suffix: ""
+          - target: aarch64-apple-darwin
+            os: macos-latest
+            archive: tar.gz
+            exe_suffix: ""
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            archive: zip
+            exe_suffix: ".exe"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+
+      - name: build
+        run: cargo build --release --workspace --target ${{ matrix.target }}
+
+      - name: stage binaries
+        shell: bash
+        run: |
+          mkdir -p dist
+          STAGE="airscope-${{ matrix.target }}"
+          mkdir -p "$STAGE"
+          for bin in $BINARIES; do
+            cp "target/${{ matrix.target }}/release/${bin}${{ matrix.exe_suffix }}" "$STAGE/"
+          done
+          cp README.md LICENSE CHANGELOG.md "$STAGE/"
+          mkdir -p "$STAGE/docs"
+          cp docs/INSTALL.md docs/ARCHITECTURE.md docs/SECURITY.md "$STAGE/docs/" || true
+          mkdir -p "$STAGE/samples"
+          cp samples/demo-01.pcap samples/README.md "$STAGE/samples/" || true
+
+      - name: archive (tar.gz)
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: |
+          STAGE="airscope-${{ matrix.target }}"
+          tar -C . -czf "dist/${STAGE}.tar.gz" "$STAGE"
+          (cd dist && sha256sum "${STAGE}.tar.gz" > "${STAGE}.tar.gz.sha256")
+
+      - name: archive (zip)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $stage = "airscope-${{ matrix.target }}"
+          Compress-Archive -Path "$stage" -DestinationPath "dist/$stage.zip"
+          $hash = (Get-FileHash "dist/$stage.zip" -Algorithm SHA256).Hash.ToLower()
+          "$hash  $stage.zip" | Out-File -Encoding ascii "dist/$stage.zip.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: airscope-${{ matrix.target }}
+          path: dist/*
+
+  publish:
+    name: publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: flatten
+        run: |
+          find dist -type f -not -name ".*" -exec mv -t dist/ {} +
+          ls -la dist/
+      - name: create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sha256

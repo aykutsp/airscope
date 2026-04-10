@@ -5,9 +5,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/aykutsp/airscope/actions"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/aykutsp/airscope/ci.yml?branch=master&style=flat-square&label=ci&logo=github"></a>
+  <a href="https://github.com/aykutsp/airscope/actions/workflows/ci.yml"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/aykutsp/airscope/ci.yml?branch=master&style=flat-square&label=ci&logo=github"></a>
+  <a href="https://github.com/aykutsp/airscope/actions/workflows/audit.yml"><img alt="audit" src="https://img.shields.io/github/actions/workflow/status/aykutsp/airscope/audit.yml?branch=master&style=flat-square&label=audit&logo=github"></a>
   <a href="https://www.rust-lang.org/"><img alt="rust" src="https://img.shields.io/badge/rust-1.75%2B-dea584?style=flat-square&logo=rust&logoColor=white"></a>
   <img alt="platforms" src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-555?style=flat-square">
+  <img alt="unsafe" src="https://img.shields.io/badge/unsafe-forbidden-success?style=flat-square">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square"></a>
   <img alt="version" src="https://img.shields.io/badge/version-0.2.0-78dce8?style=flat-square">
   <img alt="status" src="https://img.shields.io/badge/status-alpha-f5c06f?style=flat-square">
@@ -536,25 +538,50 @@ behaviour. Full note in [`docs/SECURITY.md`](docs/SECURITY.md).
 
 ## development
 
+Every common task is exposed through [`cargo xtask`][xtask] (no
+extra install) and through [`just`](https://just.systems/) as a
+shorter alias.
+
 ```bash
-# tests (cpu-only, no native deps)
-cargo test --workspace
+# the canonical "is everything healthy" check - same as CI
+cargo xtask ci          # or: just ci
 
-# regenerate the sample pcap if you change the frame builders
-cargo run -p airscope-wifi --example make_sample
+# release builds for the host target
+cargo xtask dist        # or: just dist
 
-# format
-cargo fmt --all
+# regenerate the sample pcap after a frame-builder change
+cargo xtask sample      # or: just sample
 
-# build with live capture on linux
+# emit shell completions into dist/completions/ (all shells)
+cargo xtask completions --shell all
+
+# emit man pages into dist/man/
+cargo xtask manpages
+
+# criterion benchmarks for the 802.11 parser
+cargo bench -p airscope-wifi    # HTML report: target/criterion/report/
+
+# live capture on linux
 sudo apt install libpcap-dev
 cargo build --workspace --features "airscope-airodump/live airscope-airmon/live"
 ```
 
-CI runs `cargo fmt --check`, `cargo check --all-targets`, and `cargo
-test` on Linux, macOS, and Windows. A separate Linux job installs
-`libpcap-dev` and compiles the `live` feature so regressions in the
-native path get caught before a release.
+### what CI actually runs
+
+| job | matrix | purpose |
+|-----|--------|---------|
+| `cargo check / clippy / test (no live)` | ubuntu, macos, windows | fmt + `clippy -D warnings` + test + sample-pcap smoke test |
+| `linux + live capture feature` | ubuntu | `libpcap-dev` install + clippy + build with `--features live` |
+| `MSRV (1.75)` | ubuntu | guards the pinned minimum Rust version |
+| `benchmarks compile` | ubuntu | catches regressions in the criterion harness |
+| `cargo audit` | ubuntu | security advisory check on every push + weekly cron |
+| `cargo deny` | ubuntu | license + duplicate-version + source gate |
+
+Every main-branch push must be green across all of those. Release
+artefacts (`.tar.gz` for Linux/macOS, `.zip` for Windows) are
+published automatically when a `v*` tag is pushed.
+
+[xtask]: https://github.com/matklad/cargo-xtask
 
 ---
 

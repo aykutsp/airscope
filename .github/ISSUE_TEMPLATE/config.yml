@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/aykutsp/airscope/security/advisories/new
+    about: Please report security bugs privately, not in a public issue.
+  - name: Discussion
+    url: https://github.com/aykutsp/airscope/discussions
+    about: Questions, ideas, or sharing a workflow — not a bug report.

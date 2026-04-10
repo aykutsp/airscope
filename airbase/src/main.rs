@@ -10,6 +10,8 @@
 //! Many APs means many beacons per interval, so the tool walks through
 //! the list inside a ticker.
 
+#![forbid(unsafe_code)]
+
 use std::time::Duration;
 
 use airscope_core::MacAddr;
@@ -145,8 +147,8 @@ mod hex {
     pub fn encode(data: &[u8]) -> String {
         let mut out = String::with_capacity(data.len() * 2);
         for b in data {
-            out.push(to_hex((b >> 4) as u8));
-            out.push(to_hex((b & 0x0f) as u8));
+            out.push(to_hex(b >> 4));
+            out.push(to_hex(b & 0x0f));
         }
         out
     }

@@ -6,6 +6,7 @@
 
 #![deny(rust_2018_idioms)]
 #![warn(missing_debug_implementations)]
+#![forbid(unsafe_code)]
 
 pub mod channel;
 pub mod error;

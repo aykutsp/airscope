@@ -9,6 +9,8 @@
 //! launcher without losing anything. The TUI is the quality-of-life
 //! layer on top, not the thing holding the suite together.
 
+#![forbid(unsafe_code)]
+
 use std::{io, process::Command};
 
 use airscope_ui::{banner, status_bar, TerminalGuard, Theme};
@@ -143,7 +145,7 @@ fn read_key() -> io::Result<KeyAction> {
         return Ok(KeyAction::None);
     }
     match event::read()? {
-        Event::Key(KeyEvent { code, kind, .. }) if kind == KeyEventKind::Press => Ok(match code {
+        Event::Key(KeyEvent { code, kind: KeyEventKind::Press, .. }) => Ok(match code {
             KeyCode::Char('q') | KeyCode::Esc => KeyAction::Quit,
             KeyCode::Up | KeyCode::Char('k') => KeyAction::Up,
             KeyCode::Down | KeyCode::Char('j') => KeyAction::Down,

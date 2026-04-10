@@ -39,6 +39,7 @@ pub const LINKTYPE_ETHERNET: u32 = 1;
 /// We deliberately avoid pulling in a full pcap-parser dependency:
 /// the file format is small and stable and the saved bytes are easier
 /// to reason about if we parse them ourselves.
+#[derive(Debug)]
 pub struct PcapFileReader {
     reader: BufReader<File>,
     nanosecond_precision: bool,
@@ -108,6 +109,7 @@ impl PcapFileReader {
 /// Write a libpcap savefile. Uses the classic microsecond format (magic
 /// `0xa1b2c3d4`) so anything - Wireshark, tshark, another airscope - can
 /// read it back.
+#[derive(Debug)]
 pub struct PcapFileWriter {
     file: std::io::BufWriter<File>,
 }
@@ -182,6 +184,14 @@ pub mod live {
         pub linktype: u32,
     }
 
+    impl std::fmt::Debug for LiveCapture {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            // `pcap::Capture` does not implement Debug, so we render a
+            // summary that's useful in tracing without leaking FFI state.
+            f.debug_struct("LiveCapture").field("linktype", &self.linktype).finish()
+        }
+    }
+
     impl LiveCapture {
         /// Open an interface in promiscuous mode with a 128 ms read timeout.
         /// The timeout is what lets the TUI run smoothly: shorter reads
@@ -206,7 +216,10 @@ pub mod live {
 
         /// Pull the next packet. Returns `Ok(None)` on a timeout so
         /// callers can stay interactive.
-        pub fn next(&mut self) -> Result<Option<CapturedPacket>> {
+        ///
+        /// Named `next_packet` to match `pcap::Capture::next_packet` and
+        /// to stay clear of [`std::iter::Iterator::next`].
+        pub fn next_packet(&mut self) -> Result<Option<CapturedPacket>> {
             match self.cap.next_packet() {
                 Ok(p) => Ok(Some(CapturedPacket {
                     timestamp_micros: p.header.ts.tv_sec as i64 * 1_000_000
@@ -238,6 +251,7 @@ pub mod live {
     /// `linktype` mirrors the real struct's public field so callers
     /// (like airodump's LiveSource) don't need #[cfg] splits just to
     /// read it. It stays `0` because we never actually open anything.
+    #[derive(Debug)]
     pub struct LiveCapture {
         pub linktype: u32,
     }
@@ -284,7 +298,7 @@ full step-by-step, including troubleshooting, in docs/INSTALL.md.";
         pub fn set_filter(&mut self, _filter: &str) -> Result<()> {
             Err(Error::Unsupported(NEED_LIVE.into()))
         }
-        pub fn next(&mut self) -> Result<Option<CapturedPacket>> {
+        pub fn next_packet(&mut self) -> Result<Option<CapturedPacket>> {
             Err(Error::Unsupported(NEED_LIVE.into()))
         }
         pub fn inject(&mut self, _frame: &[u8]) -> Result<()> {

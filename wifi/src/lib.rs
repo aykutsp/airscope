@@ -9,6 +9,8 @@
 //!   cross-platform pcap-file reader so offline analysis works on any OS.
 
 #![deny(rust_2018_idioms)]
+#![warn(missing_debug_implementations)]
+#![forbid(unsafe_code)]
 
 pub mod builder;
 pub mod capture;

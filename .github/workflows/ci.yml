@@ -12,7 +12,7 @@ env:
 
 jobs:
   check:
-    name: cargo check / test (no live)
+    name: cargo check / clippy / test (no live)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -21,9 +21,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
       - name: cargo fmt
         run: cargo fmt --all -- --check
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
       - name: cargo check
         run: cargo check --workspace --all-targets
       - name: cargo test
@@ -41,8 +45,40 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
       - name: install libpcap
         run: sudo apt-get update && sudo apt-get install -y libpcap-dev
+      - name: cargo clippy --features live
+        run: |
+          cargo clippy \
+            --workspace --all-targets \
+            --features "airscope-airodump/live airscope-airmon/live airscope-aireplay/live airscope-airbase/live" \
+            -- -D warnings
       - name: cargo build --features live
-        run: cargo build --workspace --features "airscope-airodump/live airscope-airmon/live airscope-aireplay/live airscope-airbase/live"
+        run: |
+          cargo build --workspace \
+            --features "airscope-airodump/live airscope-airmon/live airscope-aireplay/live airscope-airbase/live"
+
+  msrv:
+    name: MSRV (1.75)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.75.0
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo check on MSRV
+        # Clippy is intentionally skipped here — new lints land in every
+        # release and we don't want MSRV to fight with the latest toolchain.
+        run: cargo check --workspace --all-targets
+
+  bench-compile:
+    name: benchmarks compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo check --benches
+        run: cargo check -p airscope-wifi --benches

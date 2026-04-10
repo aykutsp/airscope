@@ -5,6 +5,9 @@
 //! in a ratatui TUI. With `--no-tui` it prints the final snapshot on
 //! exit, which is what we use in CI and in the pcap unit tests.
 
+#![forbid(unsafe_code)]
+
+mod hopper;
 mod scanner;
 mod source;
 mod tui;
@@ -12,11 +15,13 @@ mod tui;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
+use airscope_core::{Band, Channel};
 use airscope_ui::TerminalGuard;
 use airscope_wifi::capture::{PcapFileWriter, LINKTYPE_IEEE802_11_RADIOTAP};
 use anyhow::{Context, Result};
 use clap::Parser;
 
+use crate::hopper::{Hopper, IwHopper};
 use crate::scanner::ScanState;
 use crate::source::{FrameSource, LiveSource, ReplaySource};
 
@@ -63,6 +68,18 @@ struct Cli {
     #[arg(short = 'w', long)]
     write: Option<PathBuf>,
 
+    /// Hop between channels during a live scan. Accepts `24ghz`, `5ghz`,
+    /// `6ghz`, or a comma-separated list like `1,6,11`.
+    ///
+    /// Only meaningful on Linux — on other platforms the card stays on
+    /// whatever channel `airmon start` locked it to.
+    #[arg(long)]
+    hop: Option<String>,
+
+    /// Dwell time in milliseconds between channel hops.
+    #[arg(long, default_value_t = 250)]
+    hop_dwell_ms: u64,
+
     /// Force-stop after N seconds, useful for scripting.
     #[arg(long)]
     duration: Option<u64>,
@@ -86,10 +103,23 @@ fn main() -> Result<()> {
         return list_interfaces(cli.format);
     }
 
+    let hop_plan = match cli.hop.as_deref() {
+        None => None,
+        Some(spec) => {
+            let channels = parse_hop_spec(spec)?;
+            if channels.is_empty() {
+                anyhow::bail!("--hop: no channels in `{spec}`");
+            }
+            let dwell = Duration::from_millis(cli.hop_dwell_ms.max(1));
+            Some((channels, dwell))
+        }
+    };
+
     // Tri-state from the source: the FrameSource itself, a display
     // label for the banner, and an optional one-off warning (e.g.
     // "you're in managed mode, the table will stay empty") that we
     // surface both on stderr and inside the TUI.
+    let iface_for_hop = cli.interface.clone();
     let (mut source, label, warning): (Box<dyn FrameSource>, String, Option<String>) =
         match (cli.interface.as_ref(), cli.read.as_ref()) {
             (Some(iface), None) => {
@@ -113,6 +143,19 @@ fn main() -> Result<()> {
             }
         };
 
+    // Assemble the channel hopper after the source is open so we know
+    // the interface name the user ended up on (after fuzzy resolution).
+    let mut hopper_state = match (hop_plan, iface_for_hop) {
+        (Some((channels, dwell)), Some(iface)) => {
+            Some((Hopper::new(channels, dwell), IwHopper::new(iface)))
+        }
+        (Some(_), None) => {
+            eprintln!("airodump: --hop ignored because no live interface was selected");
+            None
+        }
+        _ => None,
+    };
+
     let mut scan = ScanState::new();
 
     let mut writer: Option<PcapFileWriter> = if let Some(path) = cli.write.as_ref() {
@@ -134,34 +177,74 @@ fn main() -> Result<()> {
             source.as_mut(),
             &mut scan,
             writer.as_mut(),
+            hopper_state.as_mut(),
             cli.duration,
             cli.format,
         );
     }
 
-    run_tui(source.as_mut(), &mut scan, writer.as_mut(), label, warning, cli.duration)
-        .context("airodump TUI crashed")
+    run_tui(
+        source.as_mut(),
+        &mut scan,
+        writer.as_mut(),
+        hopper_state.as_mut(),
+        label,
+        warning,
+        cli.duration,
+    )
+    .context("airodump TUI crashed")
+}
+
+/// Parse the `--hop` argument into a list of channels.
+///
+/// Accepts the shorthand tokens `24ghz` / `5ghz` / `6ghz`, or a
+/// comma-separated list of channel numbers like `1,6,11`. Empty or
+/// nonsense tokens return an `anyhow::Error` so clap can surface
+/// them at startup before the scanner opens.
+fn parse_hop_spec(spec: &str) -> Result<Vec<Channel>> {
+    let spec = spec.trim();
+    if spec.is_empty() {
+        anyhow::bail!("--hop: empty spec");
+    }
+    let channels = match spec.to_ascii_lowercase().as_str() {
+        "24ghz" | "2.4ghz" | "2ghz" => Channel::hop_set(Band::Twenty4),
+        "5ghz" => Channel::hop_set(Band::Five),
+        "6ghz" => Channel::hop_set(Band::Six),
+        _ => {
+            let mut out = Vec::new();
+            for tok in spec.split(',') {
+                let n: u16 =
+                    tok.trim().parse().map_err(|e| anyhow::anyhow!("--hop: `{tok}`: {e}"))?;
+                let ch = Channel::from_number(n).map_err(|e| anyhow::anyhow!("--hop: {e}"))?;
+                out.push(ch);
+            }
+            out
+        }
+    };
+    Ok(channels)
 }
 
 /// Handle `--list-interfaces`.
 ///
 /// Output shape depends on whether the `live` feature is compiled in:
-///   * default build → friendly-name list from the OS (`if_addrs`).
-///   * live build    → the pcap device list from the capture backend,
-///                     which is what you actually pass to `-i`. On
-///                     Windows these are `\Device\NPF_{GUID}` strings,
-///                     so seeing them directly is the whole point.
+///
+/// - default build: friendly-name list from the OS (`if_addrs`).
+/// - live build: the pcap device list from the capture backend,
+///   which is what you actually pass to `-i`. On Windows these are
+///   `\Device\NPF_{GUID}` strings, so seeing them directly is the
+///   whole point.
 ///
 /// For richer output (wireless detection on Linux, pcap descriptions)
 /// use `airmon list`.
 fn list_interfaces(format: OutputFormat) -> Result<()> {
     #[cfg(feature = "live")]
     {
-        return list_interfaces_live(format);
+        list_interfaces_live(format)
     }
-
     #[cfg(not(feature = "live"))]
-    list_interfaces_os(format)
+    {
+        list_interfaces_os(format)
+    }
 }
 
 /// OS-level listing. Works without any native pcap dep.
@@ -305,6 +388,20 @@ fn classify_name(name: &str, is_loopback: bool) -> &'static str {
     }
 }
 
+/// Advance the channel hopper and log any errors to stderr. Returns
+/// the channel number we just moved to, or `None` if we stayed put.
+fn drive_hopper(hopper: &mut Hopper, ctl: &mut IwHopper) -> Option<u16> {
+    use crate::hopper::HopOutcome;
+    match hopper.tick(ctl) {
+        HopOutcome::Moved(ch) => Some(ch.number),
+        HopOutcome::Skipped { channel, reason } => {
+            eprintln!("airodump: channel {} skipped: {reason}", channel.number);
+            None
+        }
+        HopOutcome::NoChange => None,
+    }
+}
+
 fn init_tracing(level: &str) {
     let filter = tracing_subscriber::EnvFilter::try_new(level)
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
@@ -316,21 +413,23 @@ fn headless_loop(
     source: &mut dyn FrameSource,
     scan: &mut ScanState,
     writer: Option<&mut PcapFileWriter>,
+    hopper: Option<&mut (Hopper, IwHopper)>,
     duration: Option<u64>,
     format: OutputFormat,
 ) -> Result<()> {
     let start = Instant::now();
     let mut writer = writer;
+    let mut hopper = hopper;
     loop {
         if let Some(secs) = duration {
             if start.elapsed().as_secs() >= secs {
                 break;
             }
         }
-        match source.next() {
+        match source.next_packet() {
             Ok(Some(pkt)) => {
                 scan.ingest(source.linktype(), &pkt);
-                if let Some(w) = writer.as_deref_mut() {
+                if let Some(w) = writer.as_mut() {
                     let _ = w.write(&pkt);
                 }
             }
@@ -340,8 +439,11 @@ fn headless_loop(
                 break;
             }
         }
+        if let Some((h, ctl)) = hopper.as_deref_mut() {
+            drive_hopper(h, ctl);
+        }
     }
-    if let Some(w) = writer.as_deref_mut() {
+    if let Some(w) = writer.as_mut() {
         let _ = w.flush();
     }
     match format {
@@ -460,6 +562,7 @@ fn run_tui(
     source: &mut dyn FrameSource,
     scan: &mut ScanState,
     writer: Option<&mut PcapFileWriter>,
+    hopper: Option<&mut (Hopper, IwHopper)>,
     label: String,
     warning: Option<String>,
     duration: Option<u64>,
@@ -468,6 +571,7 @@ fn run_tui(
     let mut state = tui::TuiState::new(label);
     state.warning = warning;
     let mut writer = writer;
+    let mut hopper = hopper;
 
     let tick = Duration::from_millis(80);
     let start = Instant::now();
@@ -475,15 +579,21 @@ fn run_tui(
     loop {
         // Drain everything the source is willing to hand us right now.
         for _ in 0..256 {
-            match source.next() {
+            match source.next_packet() {
                 Ok(Some(pkt)) => {
                     scan.ingest(source.linktype(), &pkt);
-                    if let Some(w) = writer.as_deref_mut() {
+                    if let Some(w) = writer.as_mut() {
                         let _ = w.write(&pkt);
                     }
                 }
                 Ok(None) => break,
                 Err(_) => break,
+            }
+        }
+
+        if let Some((h, ctl)) = hopper.as_deref_mut() {
+            if let Some(ch) = drive_hopper(h, ctl) {
+                state.current_channel = Some(ch);
             }
         }
 
@@ -515,7 +625,7 @@ fn run_tui(
         }
     }
 
-    if let Some(w) = writer.as_deref_mut() {
+    if let Some(w) = writer.as_mut() {
         let _ = w.flush();
     }
     drop(guard);

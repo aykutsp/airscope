@@ -6,6 +6,8 @@
 //! header is decoded, and management bodies are split into their tagged
 //! IEs in the detail panel.
 
+#![forbid(unsafe_code)]
+
 use std::path::PathBuf;
 
 use airscope_core::FrameKind;

@@ -10,6 +10,8 @@
 //! the tool just prints the crafted frame as hex - handy for test
 //! harnesses, documentation, and demos without a radio.
 
+#![forbid(unsafe_code)]
+
 use std::time::Duration;
 
 use airscope_core::MacAddr;
