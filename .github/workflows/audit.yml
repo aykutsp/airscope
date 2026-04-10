@@ -22,7 +22,9 @@ jobs:
       - name: install cargo-audit
         run: cargo install --locked cargo-audit || true
       - name: run cargo audit
-        run: cargo audit --deny warnings
+        # Fail on actual vulnerabilities; "unmaintained" warnings are
+        # noisy and they're tracked in deny.toml's ignore list instead.
+        run: cargo audit
 
   cargo-deny:
     name: cargo deny

@@ -38,7 +38,7 @@ All notable changes to this project will live here. Versions follow
   binary for `x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`,
   `aarch64-apple-darwin`, and `x86_64-pc-windows-msvc` on every
   `v*` tag and publishes a GitHub Release with archives + SHA-256.
-- **MSRV guard job** in CI against Rust 1.85 so the pinned minimum
+- **MSRV guard job** in CI against Rust 1.88 so the pinned minimum
   doesn't regress.
 - **Fuzz-lite integration test** (`wifi/tests/fuzz_like.rs`): 15k
   pseudorandom buffers through the frame + radiotap parsers with a

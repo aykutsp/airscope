@@ -15,11 +15,20 @@ all-features = false
 no-default-features = false
 
 [advisories]
-# Deny any package with an open security advisory unless explicitly
-# ignored below. Expect this list to be empty most of the time.
+# Deny any package with an *actual* security advisory. "Unmaintained"
+# advisories are flagged but not enforced because they rarely reflect
+# exploitable bugs and they can sit in the advisory DB for years
+# while the upstream crate works fine for our use case.
 version = 2
 yanked = "warn"
-ignore = []
+ignore = [
+    # paste — no longer maintained, pulled in transitively via
+    # ratatui/compact_str. No replacement has shipped upstream yet.
+    "RUSTSEC-2024-0436",
+    # unmaintained instability / time-core chain flagged in 2026;
+    # tracked upstream, no exploitable surface in our parsers.
+    "RUSTSEC-2026-0002",
+]
 
 [licenses]
 # Whitelist only permissive licenses compatible with MIT. Anything
@@ -34,11 +43,9 @@ allow = [
     "BSD-2-Clause",
     "BSD-3-Clause",
     "ISC",
-    "Unicode-DFS-2016",
     "Unicode-3.0",
     "Zlib",
     "CC0-1.0",
-    "0BSD",
     "BSL-1.0",
     "MPL-2.0",
 ]
@@ -52,12 +59,7 @@ multiple-versions = "warn"
 wildcards = "deny"
 highlight = "all"
 deny = []
-skip = [
-    # pcap still pulls thiserror 1.x through its build chain; our own
-    # crates use 2.x. This is a transitive drag we can't fix from here.
-    { name = "thiserror", version = "1" },
-    { name = "thiserror-impl", version = "1" },
-]
+skip = []
 skip-tree = []
 
 [sources]

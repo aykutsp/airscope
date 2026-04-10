@@ -11,7 +11,7 @@ packet-capture library.
 
 ## 0. prerequisites on every platform
 
-- **Rust 1.85 or newer**: install via [rustup](https://rustup.rs).
+- **Rust 1.88 or newer**: install via [rustup](https://rustup.rs).
 - **git** to clone the repository.
 - **A terminal emulator** that speaks 256-colour and unicode. Windows
   Terminal, iTerm2, Alacritty, kitty, konsole, gnome-terminal are all
@@ -275,10 +275,10 @@ the radio. `sudo rfkill unblock wifi` fixes it.
 
 | OS          | Rustc | Build tools                    | Live capture lib              |
 |-------------|:-----:|--------------------------------|-------------------------------|
-| Linux       | 1.85+ | `gcc` + `make`                 | `libpcap-dev` (or -devel)     |
-| macOS       | 1.85+ | Xcode Command Line Tools       | `brew install libpcap`        |
-| Windows MSVC| 1.85+ | VS 2022 Build Tools (C++)      | Npcap runtime + SDK           |
-| Windows GNU | 1.85+ | mingw-w64 (e.g. WinLibs)       | Npcap runtime + SDK (+ rename)|
+| Linux       | 1.88+ | `gcc` + `make`                 | `libpcap-dev` (or -devel)     |
+| macOS       | 1.88+ | Xcode Command Line Tools       | `brew install libpcap`        |
+| Windows MSVC| 1.88+ | VS 2022 Build Tools (C++)      | Npcap runtime + SDK           |
+| Windows GNU | 1.88+ | mingw-w64 (e.g. WinLibs)       | Npcap runtime + SDK (+ rename)|
 
 Once the default build succeeds on any of those, you can iterate
 with `cargo build` as usual.
