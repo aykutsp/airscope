@@ -37,6 +37,25 @@ you just want a pretty menu.
 
 ---
 
+## screenshot
+
+`airodump` running live against a Windows Wi-Fi adapter. The fuzzy
+matcher resolved `Wi-Fi` to the right Npcap device, the linktype
+turned out to be Ethernet (the stock managed-mode driver strips the
+802.11 headers), and the TUI surfaces a sticky `⚠ heads up` banner
+that explains the situation in plain English instead of leaving the
+tables silently empty.
+
+<p align="center">
+  <img src="assets/screenshots/airodump-managed-mode-warning.png" alt="airodump TUI showing the managed-mode heads-up banner on Windows" width="900">
+</p>
+
+> The same scanner running on a Linux monitor-mode interface looks
+> identical, just without the warning bar — and with the AP / station
+> tables actually filling up.
+
+---
+
 ## requirements
 
 There are **two build modes** with two different requirements profiles.
