@@ -11,10 +11,7 @@ use crate::MacAddr;
 /// Returns `None` if unknown.
 pub fn vendor(mac: &MacAddr) -> Option<&'static str> {
     let oui = mac.oui();
-    OUI_TABLE
-        .binary_search_by_key(&oui, |(k, _)| *k)
-        .ok()
-        .map(|i| OUI_TABLE[i].1)
+    OUI_TABLE.binary_search_by_key(&oui, |(k, _)| *k).ok().map(|i| OUI_TABLE[i].1)
 }
 
 // NOTE: must remain sorted by OUI or `binary_search_by_key` will miss.

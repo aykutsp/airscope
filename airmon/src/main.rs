@@ -21,9 +21,9 @@ use std::net::IpAddr;
 #[cfg(target_os = "linux")]
 use std::process::{Command, Stdio};
 
-use anyhow::Result;
 #[cfg(not(target_os = "linux"))]
 use anyhow::bail;
+use anyhow::Result;
 #[cfg(target_os = "linux")]
 use anyhow::{bail, Context};
 use clap::{Parser, Subcommand};
@@ -148,10 +148,9 @@ fn collect_interfaces() -> BTreeMap<String, Iface> {
             for ent in entries.flatten() {
                 let name = ent.file_name().to_string_lossy().into_owned();
                 let is_wireless = ent.path().join("wireless").exists();
-                let entry = by_name.entry(name.clone()).or_insert_with(|| Iface {
-                    name,
-                    ..Default::default()
-                });
+                let entry = by_name
+                    .entry(name.clone())
+                    .or_insert_with(|| Iface { name, ..Default::default() });
                 entry.is_wireless = is_wireless;
             }
         }
@@ -184,10 +183,9 @@ fn collect_interfaces() -> BTreeMap<String, Iface> {
         use airscope_wifi::capture::live as capture_live;
         if let Ok(pcap_ifaces) = capture_live::list_interfaces() {
             for p in pcap_ifaces {
-                let entry = by_name.entry(p.name.clone()).or_insert_with(|| Iface {
-                    name: p.name.clone(),
-                    ..Default::default()
-                });
+                let entry = by_name
+                    .entry(p.name.clone())
+                    .or_insert_with(|| Iface { name: p.name.clone(), ..Default::default() });
                 entry.pcap_seen = true;
                 if entry.description.is_none() {
                     entry.description = p.description;
@@ -217,12 +215,7 @@ fn iface_kind(iface: &Iface) -> &'static str {
 fn print_interfaces_table(by_name: &BTreeMap<String, Iface>) {
     // Render. Column widths are fluid so Windows' long friendly
     // names ("Loopback Pseudo-Interface 1") don't get truncated.
-    let name_width = by_name
-        .values()
-        .map(|i| i.name.chars().count())
-        .max()
-        .unwrap_or(10)
-        .max(10);
+    let name_width = by_name.values().map(|i| i.name.chars().count()).max().unwrap_or(10).max(10);
     println!(
         "{:<name_w$}  {:<6}  {:<5}  {:<6}  notes",
         "interface",
@@ -234,15 +227,16 @@ fn print_interfaces_table(by_name: &BTreeMap<String, Iface>) {
     println!("{}", "-".repeat(name_width + 32));
     for iface in by_name.values() {
         let pcap = if cfg!(feature = "live") {
-            if iface.pcap_seen { "yes" } else { "no" }
+            if iface.pcap_seen {
+                "yes"
+            } else {
+                "no"
+            }
         } else {
             "n/a"
         };
-        let ip_summary = if iface.ips.is_empty() {
-            "0".to_string()
-        } else {
-            iface.ips.len().to_string()
-        };
+        let ip_summary =
+            if iface.ips.is_empty() { "0".to_string() } else { iface.ips.len().to_string() };
         let notes = iface.description.as_deref().unwrap_or("");
         println!(
             "{:<name_w$}  {:<6}  {:<5}  {:<6}  {}",
@@ -280,19 +274,11 @@ fn print_interfaces_json(by_name: &BTreeMap<String, Iface>) {
         println!("    \"wireless\": {},", iface.is_wireless);
         println!(
             "    \"description\": {},",
-            iface
-                .description
-                .as_deref()
-                .map(json_string)
-                .unwrap_or_else(|| "null".into())
+            iface.description.as_deref().map(json_string).unwrap_or_else(|| "null".into())
         );
         println!(
             "    \"pcap_seen\": {},",
-            if cfg!(feature = "live") {
-                iface.pcap_seen.to_string()
-            } else {
-                "null".into()
-            }
+            if cfg!(feature = "live") { iface.pcap_seen.to_string() } else { "null".into() }
         );
         print!("    \"addresses\": [");
         for (j, ip) in iface.ips.iter().enumerate() {
@@ -380,10 +366,7 @@ fn status(iface: &str) -> Result<()> {
             bail!("iw dev {iface} info failed");
         }
         let text = String::from_utf8_lossy(&out.stdout);
-        let mode = text
-            .lines()
-            .find_map(|l| l.trim().strip_prefix("type "))
-            .unwrap_or("unknown");
+        let mode = text.lines().find_map(|l| l.trim().strip_prefix("type ")).unwrap_or("unknown");
         let channel = text
             .lines()
             .find_map(|l| l.trim().strip_prefix("channel "))

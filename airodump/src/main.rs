@@ -109,9 +109,7 @@ fn main() -> Result<()> {
                 None,
             ),
             _ => {
-                anyhow::bail!(
-                    "pick exactly one source: --interface <iface> or --read <file.pcap>"
-                )
+                anyhow::bail!("pick exactly one source: --interface <iface> or --read <file.pcap>")
             }
         };
 
@@ -141,21 +139,10 @@ fn main() -> Result<()> {
         );
     }
 
-    run_tui(
-        source.as_mut(),
-        &mut scan,
-        writer.as_mut(),
-        label,
-        warning,
-        cli.duration,
-    )
-    .context("airodump TUI crashed")
+    run_tui(source.as_mut(), &mut scan, writer.as_mut(), label, warning, cli.duration)
+        .context("airodump TUI crashed")
 }
 
-/// Handle `--list-interfaces`. Deliberately small — the goal is to let
-/// you pick a capture target without leaving airodump. For richer
-/// output (wireless detection on Linux, pcap description strings)
-/// use `airmon list`.
 /// Handle `--list-interfaces`.
 ///
 /// Output shape depends on whether the `live` feature is compiled in:
@@ -164,6 +151,9 @@ fn main() -> Result<()> {
 ///                     which is what you actually pass to `-i`. On
 ///                     Windows these are `\Device\NPF_{GUID}` strings,
 ///                     so seeing them directly is the whole point.
+///
+/// For richer output (wireless detection on Linux, pcap descriptions)
+/// use `airmon list`.
 fn list_interfaces(format: OutputFormat) -> Result<()> {
     #[cfg(feature = "live")]
     {
@@ -190,18 +180,8 @@ fn list_interfaces_os(format: OutputFormat) -> Result<()> {
 
     match format {
         OutputFormat::Table => {
-            let name_width = by_name
-                .keys()
-                .map(|n| n.chars().count())
-                .max()
-                .unwrap_or(12)
-                .max(12);
-            println!(
-                "{:<name_w$}  {:<6}  addresses",
-                "interface",
-                "kind",
-                name_w = name_width
-            );
+            let name_width = by_name.keys().map(|n| n.chars().count()).max().unwrap_or(12).max(12);
+            println!("{:<name_w$}  {:<6}  addresses", "interface", "kind", name_w = name_width);
             println!("{}", "-".repeat(name_width + 20));
             for (name, ips) in &by_name {
                 let kind = classify_name(name, loopback.contains(name));
@@ -209,10 +189,7 @@ fn list_interfaces_os(format: OutputFormat) -> Result<()> {
                     "{:<name_w$}  {:<6}  {}",
                     name,
                     kind,
-                    ips.iter()
-                        .map(|i| i.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", "),
+                    ips.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", "),
                     name_w = name_width
                 );
             }
@@ -257,8 +234,7 @@ fn list_interfaces_os(format: OutputFormat) -> Result<()> {
 fn list_interfaces_live(format: OutputFormat) -> Result<()> {
     use airscope_wifi::capture::live as capture_live;
 
-    let pcap_devs = capture_live::list_interfaces()
-        .map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    let pcap_devs = capture_live::list_interfaces().map_err(|e| anyhow::anyhow!(e.to_string()))?;
 
     // Sidecar: IPs from if_addrs keyed by friendly name. We'll try to
     // match these to pcap descriptions so Windows users see their
@@ -267,34 +243,21 @@ fn list_interfaces_live(format: OutputFormat) -> Result<()> {
 
     match format {
         OutputFormat::Table => {
-            let dev_width = pcap_devs
-                .iter()
-                .map(|d| d.name.chars().count())
-                .max()
-                .unwrap_or(20)
-                .max(20);
-            println!(
-                "{:<dev_w$}  {:<5}  description",
-                "device",
-                "state",
-                dev_w = dev_width
-            );
+            let dev_width =
+                pcap_devs.iter().map(|d| d.name.chars().count()).max().unwrap_or(20).max(20);
+            println!("{:<dev_w$}  {:<5}  description", "device", "state", dev_w = dev_width);
             println!("{}", "-".repeat(dev_width + 30));
             for dev in &pcap_devs {
                 let state = if dev.is_up { "up" } else { "down" };
                 let desc = dev.description.as_deref().unwrap_or("-");
-                println!(
-                    "{:<dev_w$}  {:<5}  {}",
-                    dev.name,
-                    state,
-                    desc,
-                    dev_w = dev_width
-                );
+                println!("{:<dev_w$}  {:<5}  {}", dev.name, state, desc, dev_w = dev_width);
                 // Attach any matching IPv4/IPv6 addresses.
                 if let Some(desc) = dev.description.as_deref() {
                     let matches: Vec<_> = ip_addrs
                         .iter()
-                        .filter(|a| desc.to_ascii_lowercase().contains(&a.name.to_ascii_lowercase()))
+                        .filter(|a| {
+                            desc.to_ascii_lowercase().contains(&a.name.to_ascii_lowercase())
+                        })
                         .collect();
                     for ip in matches {
                         println!("{:<dev_w$}    {} ({})", "", ip.ip(), ip.name, dev_w = dev_width);
@@ -316,10 +279,7 @@ fn list_interfaces_live(format: OutputFormat) -> Result<()> {
                 println!("    \"pcap_device\": {},", json_escape(&dev.name));
                 println!(
                     "    \"description\": {},",
-                    dev.description
-                        .as_deref()
-                        .map(json_escape)
-                        .unwrap_or_else(|| "null".into())
+                    dev.description.as_deref().map(json_escape).unwrap_or_else(|| "null".into())
                 );
                 println!("    \"is_up\": {}", dev.is_up);
                 println!("  }}{comma}");
@@ -348,10 +308,8 @@ fn classify_name(name: &str, is_loopback: bool) -> &'static str {
 fn init_tracing(level: &str) {
     let filter = tracing_subscriber::EnvFilter::try_new(level)
         .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("warn"));
-    let _ = tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .with_writer(std::io::stderr)
-        .try_init();
+    let _ =
+        tracing_subscriber::fmt().with_env_filter(filter).with_writer(std::io::stderr).try_init();
 }
 
 fn headless_loop(
@@ -388,7 +346,7 @@ fn headless_loop(
     }
     match format {
         OutputFormat::Table => print_table(scan),
-        OutputFormat::Json  => print_json(scan),
+        OutputFormat::Json => print_json(scan),
     }
     Ok(())
 }
@@ -459,19 +417,13 @@ fn print_json(scan: &ScanState) {
         println!("      \"mac\": \"{}\",", sta.mac);
         println!(
             "      \"bssid\": {},",
-            sta.bssid
-                .map(|b| format!("\"{b}\""))
-                .unwrap_or_else(|| "null".into())
+            sta.bssid.map(|b| format!("\"{b}\"")).unwrap_or_else(|| "null".into())
         );
         println!("      \"signal_dbm\": {},", sta.signal_dbm);
         println!("      \"frames\": {},", sta.frames);
         println!(
             "      \"probes\": [{}]",
-            sta.probes
-                .iter()
-                .map(|p| json_escape(p))
-                .collect::<Vec<_>>()
-                .join(",")
+            sta.probes.iter().map(|p| json_escape(p)).collect::<Vec<_>>().join(",")
         );
         println!("    }}{comma}");
     }
@@ -491,7 +443,7 @@ fn json_escape(s: &str) -> String {
     out.push('"');
     for c in s.chars() {
         match c {
-            '"'  => out.push_str("\\\""),
+            '"' => out.push_str("\\\""),
             '\\' => out.push_str("\\\\"),
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),

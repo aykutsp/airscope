@@ -69,13 +69,13 @@ pub fn poll_event(tick: Duration, state: &mut TuiState) -> std::io::Result<TuiOu
             }
             return Ok(match code {
                 KeyCode::Char('q') | KeyCode::Esc => TuiOutcome::Quit,
-                KeyCode::Char('f')                => {
+                KeyCode::Char('f') => {
                     state.follow_selected = !state.follow_selected;
                     TuiOutcome::ToggleFollow
                 }
-                KeyCode::Up                       => TuiOutcome::SelectPrev,
-                KeyCode::Down                     => TuiOutcome::SelectNext,
-                _                                 => TuiOutcome::None,
+                KeyCode::Up => TuiOutcome::SelectPrev,
+                KeyCode::Down => TuiOutcome::SelectNext,
+                _ => TuiOutcome::None,
             });
         }
     }
@@ -87,11 +87,7 @@ pub fn draw(frame: &mut Frame<'_>, state: &mut TuiState, scan: &ScanState) {
     // Figure out how many lines the warning will need so we can reserve
     // the right amount of space; otherwise a long managed-mode banner
     // would push the tables off the bottom of the terminal.
-    let warning_lines = state
-        .warning
-        .as_deref()
-        .map(|w| 2 + w.lines().count() as u16)
-        .unwrap_or(0);
+    let warning_lines = state.warning.as_deref().map(|w| 2 + w.lines().count() as u16).unwrap_or(0);
 
     let mut constraints = vec![Constraint::Length(4)];
     if warning_lines > 0 {
@@ -101,10 +97,8 @@ pub fn draw(frame: &mut Frame<'_>, state: &mut TuiState, scan: &ScanState) {
     constraints.push(Constraint::Length(8));
     constraints.push(Constraint::Length(1));
 
-    let outer = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(constraints)
-        .split(area);
+    let outer =
+        Layout::default().direction(Direction::Vertical).constraints(constraints).split(area);
 
     draw_banner(frame, outer[0], state, scan);
     let mut next = 1;
@@ -127,16 +121,12 @@ fn draw_warning(frame: &mut Frame<'_>, area: Rect, state: &TuiState) {
     };
     let title = Span::styled(
         " ⚠ heads up ",
-        Style::default()
-            .fg(state.theme.warn)
-            .add_modifier(Modifier::BOLD),
+        Style::default().fg(state.theme.warn).add_modifier(Modifier::BOLD),
     );
     let mut lines: Vec<Line<'_>> = Vec::new();
     for (i, ln) in msg.lines().enumerate() {
         let style = if i == 0 {
-            Style::default()
-                .fg(state.theme.warn)
-                .add_modifier(Modifier::BOLD)
+            Style::default().fg(state.theme.warn).add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(Color::Rgb(220, 220, 230))
         };
@@ -151,21 +141,14 @@ fn draw_warning(frame: &mut Frame<'_>, area: Rect, state: &TuiState) {
     frame.render_widget(p, area);
 }
 
-fn draw_banner(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    state: &TuiState,
-    scan: &ScanState,
-) {
+fn draw_banner(frame: &mut Frame<'_>, area: Rect, state: &TuiState, scan: &ScanState) {
     let uptime = state.started_at.elapsed();
     let c = &scan.counters;
     let sub = Paragraph::new(vec![
         Line::from(vec![
             Span::styled(
                 format!("airodump  "),
-                Style::default()
-                    .fg(state.theme.accent)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD),
             ),
             Span::styled(
                 format!("• iface {}", state.iface_label),
@@ -196,34 +179,16 @@ fn draw_banner(
             .border_style(Style::default().fg(state.theme.accent_dim))
             .title(Span::styled(
                 " ▞▞▞ airscope suite ",
-                Style::default()
-                    .fg(state.theme.accent)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD),
             )),
     );
     let _ = banner; // keep the import live if we want to swap the header later
     frame.render_widget(sub, area);
 }
 
-fn draw_ap_table(
-    frame: &mut Frame<'_>,
-    area: Rect,
-    state: &mut TuiState,
-    aps: &[AccessPoint],
-) {
+fn draw_ap_table(frame: &mut Frame<'_>, area: Rect, state: &mut TuiState, aps: &[AccessPoint]) {
     let header = Row::new(
-        [
-            "BSSID",
-            "SIG",
-            " bars ",
-            "CH",
-            "BCN",
-            "#DATA",
-            "ENC",
-            "ESSID",
-        ]
-        .iter()
-        .map(|h| {
+        ["BSSID", "SIG", " bars ", "CH", "BCN", "#DATA", "ENC", "ESSID"].iter().map(|h| {
             Cell::from(*h)
                 .style(Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD))
         }),
@@ -273,11 +238,7 @@ fn draw_ap_table(
                 Style::default().fg(state.theme.accent),
             )),
     )
-    .row_highlight_style(
-        Style::default()
-            .bg(Color::Rgb(35, 42, 60))
-            .add_modifier(Modifier::BOLD),
-    )
+    .row_highlight_style(Style::default().bg(Color::Rgb(35, 42, 60)).add_modifier(Modifier::BOLD))
     .highlight_symbol("▶ ");
 
     frame.render_stateful_widget(t, area, &mut state.table);
@@ -299,14 +260,9 @@ fn draw_stations(
     scan: &ScanState,
     selected: Option<&AccessPoint>,
 ) {
-    let header = Row::new(
-        ["STATION", "SIG", "FRAMES", "BSSID", "PROBES"]
-            .iter()
-            .map(|h| {
-                Cell::from(*h)
-                    .style(Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD))
-            }),
-    )
+    let header = Row::new(["STATION", "SIG", "FRAMES", "BSSID", "PROBES"].iter().map(|h| {
+        Cell::from(*h).style(Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD))
+    }))
     .style(Style::default().bg(state.theme.header_bg));
 
     let stations: Vec<Station> = scan
@@ -314,9 +270,7 @@ fn draw_stations(
         .into_iter()
         .filter(|s| {
             !state.follow_selected
-                || selected
-                    .map(|ap| s.bssid.map_or(true, |b| b == ap.bssid))
-                    .unwrap_or(true)
+                || selected.map(|ap| s.bssid.map_or(true, |b| b == ap.bssid)).unwrap_or(true)
         })
         .take(8)
         .collect();
@@ -359,10 +313,7 @@ fn draw_stations(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(state.theme.accent_dim))
-            .title(Span::styled(
-                title,
-                Style::default().fg(state.theme.accent),
-            )),
+            .title(Span::styled(title, Style::default().fg(state.theme.accent))),
     );
     frame.render_widget(t, area);
 }

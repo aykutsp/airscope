@@ -9,10 +9,7 @@
 //! launcher without losing anything. The TUI is the quality-of-life
 //! layer on top, not the thing holding the suite together.
 
-use std::{
-    io,
-    process::Command,
-};
+use std::{io, process::Command};
 
 use airscope_ui::{banner, status_bar, TerminalGuard, Theme};
 use anyhow::Result;
@@ -146,15 +143,13 @@ fn read_key() -> io::Result<KeyAction> {
         return Ok(KeyAction::None);
     }
     match event::read()? {
-        Event::Key(KeyEvent { code, kind, .. }) if kind == KeyEventKind::Press => {
-            Ok(match code {
-                KeyCode::Char('q') | KeyCode::Esc => KeyAction::Quit,
-                KeyCode::Up | KeyCode::Char('k') => KeyAction::Up,
-                KeyCode::Down | KeyCode::Char('j') => KeyAction::Down,
-                KeyCode::Enter | KeyCode::Char(' ') => KeyAction::Launch,
-                _ => KeyAction::None,
-            })
-        }
+        Event::Key(KeyEvent { code, kind, .. }) if kind == KeyEventKind::Press => Ok(match code {
+            KeyCode::Char('q') | KeyCode::Esc => KeyAction::Quit,
+            KeyCode::Up | KeyCode::Char('k') => KeyAction::Up,
+            KeyCode::Down | KeyCode::Char('j') => KeyAction::Down,
+            KeyCode::Enter | KeyCode::Char(' ') => KeyAction::Launch,
+            _ => KeyAction::None,
+        }),
         _ => Ok(KeyAction::None),
     }
 }
@@ -163,17 +158,10 @@ fn draw(f: &mut Frame<'_>, theme: &Theme, list: &mut ListState) {
     let area = f.area();
     let outer = Layout::default()
         .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Length(4),
-            Constraint::Min(10),
-            Constraint::Length(1),
-        ])
+        .constraints([Constraint::Length(4), Constraint::Min(10), Constraint::Length(1)])
         .split(area);
 
-    f.render_widget(
-        banner("AIRSCOPE", "a wireless suite, reimagined in rust", theme),
-        outer[0],
-    );
+    f.render_widget(banner("AIRSCOPE", "a wireless suite, reimagined in rust", theme), outer[0]);
 
     let body = Layout::default()
         .direction(Direction::Horizontal)
@@ -183,11 +171,7 @@ fn draw(f: &mut Frame<'_>, theme: &Theme, list: &mut ListState) {
     draw_menu(f, body[0], theme, list);
     draw_detail(f, body[1], theme, list);
 
-    let hints: &[(&str, &str)] = &[
-        ("↑/↓", "navigate"),
-        ("↵", "launch"),
-        ("q", "quit"),
-    ];
+    let hints: &[(&str, &str)] = &[("↑/↓", "navigate"), ("↵", "launch"), ("q", "quit")];
     f.render_widget(status_bar(hints, theme), outer[2]);
 }
 
@@ -198,14 +182,9 @@ fn draw_menu(f: &mut Frame<'_>, area: Rect, theme: &Theme, list: &mut ListState)
             ListItem::new(Line::from(vec![
                 Span::styled(
                     format!("  {:<9}", t.name),
-                    Style::default()
-                        .fg(theme.accent)
-                        .add_modifier(Modifier::BOLD),
+                    Style::default().fg(theme.accent).add_modifier(Modifier::BOLD),
                 ),
-                Span::styled(
-                    t.tagline,
-                    Style::default().fg(theme.muted),
-                ),
+                Span::styled(t.tagline, Style::default().fg(theme.muted)),
             ]))
         })
         .collect();
@@ -215,16 +194,9 @@ fn draw_menu(f: &mut Frame<'_>, area: Rect, theme: &Theme, list: &mut ListState)
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(theme.accent_dim))
-                .title(Span::styled(
-                    " tools ",
-                    Style::default().fg(theme.accent),
-                )),
+                .title(Span::styled(" tools ", Style::default().fg(theme.accent))),
         )
-        .highlight_style(
-            Style::default()
-                .bg(Color::Rgb(35, 42, 60))
-                .add_modifier(Modifier::BOLD),
-        )
+        .highlight_style(Style::default().bg(Color::Rgb(35, 42, 60)).add_modifier(Modifier::BOLD))
         .highlight_symbol("▶ ");
 
     f.render_stateful_widget(list_widget, area, list);
@@ -235,28 +207,14 @@ fn draw_detail(f: &mut Frame<'_>, area: Rect, theme: &Theme, list: &ListState) {
     let tool = &TOOLS[i];
     let body = vec![
         Line::from(vec![
-            Span::styled(
-                tool.name,
-                Style::default()
-                    .fg(theme.accent)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                format!("  — {}", tool.tagline),
-                Style::default().fg(theme.muted),
-            ),
+            Span::styled(tool.name, Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+            Span::styled(format!("  — {}", tool.tagline), Style::default().fg(theme.muted)),
         ]),
         Line::from(""),
         Line::from(Span::raw(tool.description)),
         Line::from(""),
-        Line::from(Span::styled(
-            "example:",
-            Style::default().fg(theme.muted),
-        )),
-        Line::from(Span::styled(
-            format!("  $ {}", tool.example),
-            Style::default().fg(theme.good),
-        )),
+        Line::from(Span::styled("example:", Style::default().fg(theme.muted))),
+        Line::from(Span::styled(format!("  $ {}", tool.example), Style::default().fg(theme.good))),
     ];
 
     let p = Paragraph::new(body)
@@ -264,10 +222,7 @@ fn draw_detail(f: &mut Frame<'_>, area: Rect, theme: &Theme, list: &ListState) {
             Block::default()
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(theme.accent_dim))
-                .title(Span::styled(
-                    " detail ",
-                    Style::default().fg(theme.accent),
-                )),
+                .title(Span::styled(" detail ", Style::default().fg(theme.accent))),
         )
         .wrap(Wrap { trim: false });
     f.render_widget(p, area);

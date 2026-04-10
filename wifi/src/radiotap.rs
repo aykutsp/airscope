@@ -30,22 +30,22 @@ pub struct RadiotapHeader {
 // Field indices and the length each consumes. Taken from the radiotap spec.
 // We only list the ones we need plus any that appear before them, because
 // the presence bitmap is ordered and we have to skip in order.
-const TSFT:         usize = 0;
-const FLAGS:        usize = 1;
-const RATE:         usize = 2;
-const CHANNEL:      usize = 3;
-const FHSS:         usize = 4;
-const ANT_SIGNAL:   usize = 5;
-const ANT_NOISE:    usize = 6;
-const LOCK_QUAL:    usize = 7;
-const TX_ATTEN:     usize = 8;
-const DB_TX_ATTEN:  usize = 9;
+const TSFT: usize = 0;
+const FLAGS: usize = 1;
+const RATE: usize = 2;
+const CHANNEL: usize = 3;
+const FHSS: usize = 4;
+const ANT_SIGNAL: usize = 5;
+const ANT_NOISE: usize = 6;
+const LOCK_QUAL: usize = 7;
+const TX_ATTEN: usize = 8;
+const DB_TX_ATTEN: usize = 9;
 const DBM_TX_POWER: usize = 10;
-const ANTENNA:      usize = 11;
-const DB_ANT_SIG:   usize = 12;
+const ANTENNA: usize = 11;
+const DB_ANT_SIG: usize = 12;
 const DB_ANT_NOISE: usize = 13;
-const RX_FLAGS:     usize = 14;
-const TX_FLAGS:     usize = 15;
+const RX_FLAGS: usize = 14;
+const TX_FLAGS: usize = 15;
 
 // Alignment + size (in bytes) for each present-bit.
 // `align` is the alignment boundary inside the radiotap body.
@@ -56,23 +56,23 @@ struct FieldDef {
 
 fn field_def(bit: usize) -> Option<FieldDef> {
     Some(match bit {
-        TSFT         => FieldDef { align: 8, size: 8 },
-        FLAGS        => FieldDef { align: 1, size: 1 },
-        RATE         => FieldDef { align: 1, size: 1 },
-        CHANNEL      => FieldDef { align: 2, size: 4 },
-        FHSS         => FieldDef { align: 1, size: 2 },
-        ANT_SIGNAL   => FieldDef { align: 1, size: 1 },
-        ANT_NOISE    => FieldDef { align: 1, size: 1 },
-        LOCK_QUAL    => FieldDef { align: 2, size: 2 },
-        TX_ATTEN     => FieldDef { align: 2, size: 2 },
-        DB_TX_ATTEN  => FieldDef { align: 2, size: 2 },
+        TSFT => FieldDef { align: 8, size: 8 },
+        FLAGS => FieldDef { align: 1, size: 1 },
+        RATE => FieldDef { align: 1, size: 1 },
+        CHANNEL => FieldDef { align: 2, size: 4 },
+        FHSS => FieldDef { align: 1, size: 2 },
+        ANT_SIGNAL => FieldDef { align: 1, size: 1 },
+        ANT_NOISE => FieldDef { align: 1, size: 1 },
+        LOCK_QUAL => FieldDef { align: 2, size: 2 },
+        TX_ATTEN => FieldDef { align: 2, size: 2 },
+        DB_TX_ATTEN => FieldDef { align: 2, size: 2 },
         DBM_TX_POWER => FieldDef { align: 1, size: 1 },
-        ANTENNA      => FieldDef { align: 1, size: 1 },
-        DB_ANT_SIG   => FieldDef { align: 1, size: 1 },
+        ANTENNA => FieldDef { align: 1, size: 1 },
+        DB_ANT_SIG => FieldDef { align: 1, size: 1 },
         DB_ANT_NOISE => FieldDef { align: 1, size: 1 },
-        RX_FLAGS     => FieldDef { align: 2, size: 2 },
-        TX_FLAGS     => FieldDef { align: 2, size: 2 },
-        _            => return None,
+        RX_FLAGS => FieldDef { align: 2, size: 2 },
+        TX_FLAGS => FieldDef { align: 2, size: 2 },
+        _ => return None,
     })
 }
 
@@ -119,10 +119,7 @@ impl RadiotapHeader {
             }
         }
 
-        let mut info = RadiotapInfo {
-            length: length as u16,
-            ..Default::default()
-        };
+        let mut info = RadiotapInfo { length: length as u16, ..Default::default() };
 
         let data_base = data_start;
         let mut cursor = 0usize;

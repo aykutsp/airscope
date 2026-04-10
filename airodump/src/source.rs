@@ -13,8 +13,8 @@ use std::time::{Duration, Instant};
 
 use airscope_core::{Error, Result};
 use airscope_wifi::capture::{
-    live::LiveCapture, CapturedPacket, PcapFileReader, LINKTYPE_ETHERNET,
-    LINKTYPE_IEEE802_11, LINKTYPE_IEEE802_11_RADIOTAP,
+    live::LiveCapture, CapturedPacket, PcapFileReader, LINKTYPE_ETHERNET, LINKTYPE_IEEE802_11,
+    LINKTYPE_IEEE802_11_RADIOTAP,
 };
 
 pub trait FrameSource {
@@ -51,20 +51,15 @@ impl LiveSource {
                 #[cfg(feature = "live")]
                 if let Some(resolved) = Self::fuzzy_resolve(interface)? {
                     if resolved != interface {
-                        eprintln!(
-                            "airodump: resolved `{}` -> `{}`",
-                            interface, resolved
-                        );
+                        eprintln!("airodump: resolved `{}` -> `{}`", interface, resolved);
                     }
-                    return LiveCapture::open(&resolved)
-                        .map(Self::wrap)
-                        .map_err(|e| {
-                            Error::Capture(format!(
-                                "{e}\n\nhint: run `airodump --list-interfaces` \
+                    return LiveCapture::open(&resolved).map(Self::wrap).map_err(|e| {
+                        Error::Capture(format!(
+                            "{e}\n\nhint: run `airodump --list-interfaces` \
                                  and copy the NAME column verbatim (on Windows \
                                  those look like \\Device\\NPF_{{...}})."
-                            ))
-                        });
+                        ))
+                    });
                 }
                 Err(Self::enrich_open_error(interface, first_err))
             }
@@ -78,10 +73,7 @@ impl LiveSource {
         // Only apply the 802.11 BPF filter when the link really speaks
         // 802.11. On Ethernet the "type mgt" expression compiles to
         // nothing and we'd sit on zero frames forever, silently.
-        if matches!(
-            linktype,
-            LINKTYPE_IEEE802_11_RADIOTAP | LINKTYPE_IEEE802_11
-        ) {
+        if matches!(linktype, LINKTYPE_IEEE802_11_RADIOTAP | LINKTYPE_IEEE802_11) {
             // airodump-ng uses a similar filter: management + QoS data only.
             let _ = cap.set_filter("type mgt or (type data and subtype qos-data)");
         }
@@ -143,10 +135,7 @@ impl LiveSource {
             return Ok(Some(d.name.clone()));
         }
         // Substring hit inside the device name itself.
-        if let Some(d) = devs
-            .iter()
-            .find(|d| d.name.to_ascii_lowercase().contains(&wanted))
-        {
+        if let Some(d) = devs.iter().find(|d| d.name.to_ascii_lowercase().contains(&wanted)) {
             return Ok(Some(d.name.clone()));
         }
         Ok(None)
@@ -211,9 +200,7 @@ impl FrameSource for ReplaySource {
         let Some(pkt) = self.next_pkt.as_ref() else {
             return Ok(None);
         };
-        let first = *self
-            .first_capture_micros
-            .get_or_insert(pkt.timestamp_micros);
+        let first = *self.first_capture_micros.get_or_insert(pkt.timestamp_micros);
         let elapsed_capture = (pkt.timestamp_micros - first) as f64 / self.rate as f64;
         let target = Duration::from_micros(elapsed_capture.max(0.0) as u64);
         if self.replay_start.elapsed() < target {

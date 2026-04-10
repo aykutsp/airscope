@@ -57,7 +57,7 @@ pub fn signal_color(dbm: i16, theme: &Theme) -> Color {
         d if d >= -50 => theme.good,
         d if d >= -65 => Color::Rgb(200, 220, 140),
         d if d >= -75 => theme.warn,
-        _             => theme.bad,
+        _ => theme.bad,
     }
 }
 
@@ -78,25 +78,11 @@ pub fn signal_bar(dbm: i16) -> String {
 pub fn banner<'a>(tool: &'a str, tagline: &'a str, theme: &Theme) -> Paragraph<'a> {
     Paragraph::new(vec![
         Line::from(vec![
-            Span::styled(
-                "▞▞▞  ",
-                Style::default().fg(theme.accent_dim),
-            ),
-            Span::styled(
-                tool,
-                Style::default()
-                    .fg(theme.accent)
-                    .add_modifier(Modifier::BOLD),
-            ),
-            Span::styled(
-                "  ▞▞▞",
-                Style::default().fg(theme.accent_dim),
-            ),
+            Span::styled("▞▞▞  ", Style::default().fg(theme.accent_dim)),
+            Span::styled(tool, Style::default().fg(theme.accent).add_modifier(Modifier::BOLD)),
+            Span::styled("  ▞▞▞", Style::default().fg(theme.accent_dim)),
         ]),
-        Line::from(Span::styled(
-            tagline,
-            Style::default().fg(theme.muted),
-        )),
+        Line::from(Span::styled(tagline, Style::default().fg(theme.muted))),
     ])
     .alignment(Alignment::Center)
     .block(
@@ -118,10 +104,7 @@ pub fn status_bar<'a>(hints: &'a [(&'a str, &'a str)], theme: &Theme) -> Paragra
             Style::default().fg(theme.accent).add_modifier(Modifier::BOLD),
         ));
         spans.push(Span::raw(" "));
-        spans.push(Span::styled(
-            *label,
-            Style::default().fg(Color::Rgb(220, 220, 230)),
-        ));
+        spans.push(Span::styled(*label, Style::default().fg(Color::Rgb(220, 220, 230))));
     }
     Paragraph::new(Line::from(spans))
         .alignment(Alignment::Left)
@@ -159,11 +142,7 @@ impl TerminalGuard {
 impl Drop for TerminalGuard {
     fn drop(&mut self) {
         let _ = disable_raw_mode();
-        let _ = execute!(
-            self.terminal.backend_mut(),
-            LeaveAlternateScreen,
-            DisableMouseCapture
-        );
+        let _ = execute!(self.terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture);
         let _ = self.terminal.show_cursor();
     }
 }

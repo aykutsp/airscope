@@ -60,33 +60,25 @@ impl ScanState {
         };
 
         match frame.kind() {
-            FrameKind::Beacon            => self.counters.beacons += 1,
-            FrameKind::ProbeRequest      => self.counters.probes += 1,
-            FrameKind::ProbeResponse     => self.counters.probes += 1,
+            FrameKind::Beacon => self.counters.beacons += 1,
+            FrameKind::ProbeRequest => self.counters.probes += 1,
+            FrameKind::ProbeResponse => self.counters.probes += 1,
             FrameKind::Data | FrameKind::Qos => self.counters.data += 1,
-            FrameKind::Deauthentication  => self.counters.deauth += 1,
+            FrameKind::Deauthentication => self.counters.deauth += 1,
             _ => {}
         }
 
         let now = OffsetDateTime::now_utc();
-        let signal = rt_info
-            .and_then(|i| i.signal_dbm)
-            .map(|v| v as i16)
-            .unwrap_or(0);
+        let signal = rt_info.and_then(|i| i.signal_dbm).map(|v| v as i16).unwrap_or(0);
 
         match frame.frame_type {
             FrameType::Management => self.ingest_management(&frame, now, signal),
-            FrameType::Data       => self.ingest_data(&frame, now, signal),
-            _                     => {}
+            FrameType::Data => self.ingest_data(&frame, now, signal),
+            _ => {}
         }
     }
 
-    fn ingest_management(
-        &mut self,
-        frame: &Dot11Frame<'_>,
-        now: OffsetDateTime,
-        signal: i16,
-    ) {
+    fn ingest_management(&mut self, frame: &Dot11Frame<'_>, now: OffsetDateTime, signal: i16) {
         match frame.subtype {
             FrameSubtype::Beacon | FrameSubtype::ProbeResponse => {
                 let bssid = frame.bssid();
@@ -193,11 +185,7 @@ impl ScanState {
     /// Sort: strongest signal first, then SSID alphabetically.
     pub fn aps_sorted(&self) -> Vec<AccessPoint> {
         let mut out: Vec<_> = self.aps.values().cloned().collect();
-        out.sort_by(|a, b| {
-            b.signal_dbm
-                .cmp(&a.signal_dbm)
-                .then_with(|| a.label().cmp(&b.label()))
-        });
+        out.sort_by(|a, b| b.signal_dbm.cmp(&a.signal_dbm).then_with(|| a.label().cmp(&b.label())));
         out
     }
 

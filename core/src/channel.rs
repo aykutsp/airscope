@@ -15,8 +15,8 @@ impl Band {
     pub fn label(&self) -> &'static str {
         match self {
             Band::Twenty4 => "2.4 GHz",
-            Band::Five    => "5 GHz",
-            Band::Six     => "6 GHz",
+            Band::Five => "5 GHz",
+            Band::Six => "6 GHz",
         }
     }
 }
@@ -33,9 +33,9 @@ impl Channel {
     /// 1..=14 → 2.4 GHz; everything else is treated as 5 GHz by default.
     pub fn from_number(number: u16) -> Result<Self> {
         let band = match number {
-            1..=14   => Band::Twenty4,
+            1..=14 => Band::Twenty4,
             32..=177 => Band::Five,
-            _        => return Err(Error::InvalidChannel(number)),
+            _ => return Err(Error::InvalidChannel(number)),
         };
         Ok(Self { number, band })
     }
@@ -54,9 +54,9 @@ impl Channel {
     pub fn frequency_mhz(&self) -> u16 {
         match self.band {
             Band::Twenty4 if self.number == 14 => 2484,
-            Band::Twenty4                      => 2407 + 5 * self.number,
-            Band::Five                         => 5000 + 5 * self.number,
-            Band::Six                          => 5950 + 5 * self.number,
+            Band::Twenty4 => 2407 + 5 * self.number,
+            Band::Five => 5000 + 5 * self.number,
+            Band::Six => 5950 + 5 * self.number,
         }
     }
 
@@ -64,21 +64,15 @@ impl Channel {
     /// This is what airodump-ng uses when no `-c` is supplied.
     pub fn hop_set(band: Band) -> Vec<Channel> {
         match band {
-            Band::Twenty4 => (1u16..=13)
-                .map(|n| Channel { number: n, band })
-                .collect(),
+            Band::Twenty4 => (1u16..=13).map(|n| Channel { number: n, band }).collect(),
             Band::Five => [
-                36, 40, 44, 48, 52, 56, 60, 64,
-                100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144,
-                149, 153, 157, 161, 165,
+                36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136,
+                140, 144, 149, 153, 157, 161, 165,
             ]
             .iter()
             .map(|n| Channel { number: *n, band })
             .collect(),
-            Band::Six => (1..=233)
-                .step_by(4)
-                .map(|n| Channel { number: n as u16, band })
-                .collect(),
+            Band::Six => (1..=233).step_by(4).map(|n| Channel { number: n as u16, band }).collect(),
         }
     }
 }

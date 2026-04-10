@@ -76,13 +76,7 @@ async fn main() -> Result<()> {
         .enumerate()
         .map(|(idx, ssid)| {
             let bssid = MacAddr::random_with_seed(0xbeef_1000 + idx as u64);
-            let frame = build_beacon(
-                bssid,
-                ssid,
-                cli.channel,
-                cli.beacon_interval,
-                cli.privacy,
-            );
+            let frame = build_beacon(bssid, ssid, cli.channel, cli.beacon_interval, cli.privacy);
             (bssid, ssid.clone(), frame)
         })
         .collect();
@@ -158,9 +152,9 @@ mod hex {
     }
     fn to_hex(n: u8) -> char {
         match n {
-            0..=9   => (b'0' + n) as char,
+            0..=9 => (b'0' + n) as char,
             10..=15 => (b'a' + n - 10) as char,
-            _       => '?',
+            _ => '?',
         }
     }
 }

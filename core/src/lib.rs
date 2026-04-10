@@ -88,16 +88,16 @@ pub enum FrameKind {
 impl FrameKind {
     pub fn short(&self) -> &'static str {
         match self {
-            FrameKind::Beacon           => "BCN",
-            FrameKind::ProbeRequest     => "PRQ",
-            FrameKind::ProbeResponse    => "PRS",
-            FrameKind::Authentication   => "AUTH",
+            FrameKind::Beacon => "BCN",
+            FrameKind::ProbeRequest => "PRQ",
+            FrameKind::ProbeResponse => "PRS",
+            FrameKind::Authentication => "AUTH",
             FrameKind::Deauthentication => "DEAU",
-            FrameKind::Association      => "ASSO",
-            FrameKind::Data             => "DATA",
-            FrameKind::Qos              => "QOS",
-            FrameKind::Control          => "CTRL",
-            FrameKind::Other            => "?",
+            FrameKind::Association => "ASSO",
+            FrameKind::Data => "DATA",
+            FrameKind::Qos => "QOS",
+            FrameKind::Control => "CTRL",
+            FrameKind::Other => "?",
         }
     }
 }

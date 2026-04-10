@@ -9,7 +9,7 @@ pub struct MacAddr(pub [u8; 6]);
 
 impl MacAddr {
     pub const BROADCAST: Self = MacAddr([0xff; 6]);
-    pub const ZERO:      Self = MacAddr([0; 6]);
+    pub const ZERO: Self = MacAddr([0; 6]);
 
     pub fn new(bytes: [u8; 6]) -> Self {
         Self(bytes)
@@ -85,8 +85,7 @@ impl FromStr for MacAddr {
         if cleaned.len() != 12 {
             return Err(Error::Parse(format!("mac: bad length `{s}`")));
         }
-        let raw = hex::decode(&cleaned)
-            .map_err(|e| Error::Parse(format!("mac: {e}")))?;
+        let raw = hex::decode(&cleaned).map_err(|e| Error::Parse(format!("mac: {e}")))?;
         Self::from_slice(&raw)
     }
 }

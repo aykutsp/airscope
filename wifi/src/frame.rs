@@ -5,9 +5,7 @@
 //! recognised but mostly left opaque; airodump doesn't need to decrypt
 //! them to count traffic per station.
 
-use airscope_core::{
-    Cipher, Encryption, Error, FrameKind, KeyManagement, MacAddr, Result,
-};
+use airscope_core::{Cipher, Encryption, Error, FrameKind, KeyManagement, MacAddr, Result};
 use byteorder::{ByteOrder, LittleEndian};
 
 /// Top-level 802.11 frame type.
@@ -68,7 +66,7 @@ impl<'a> Dot11Frame<'a> {
         }
         let type_bits = ((fc >> 2) & 0x0003) as u8;
         let subtype_bits = ((fc >> 4) & 0x000f) as u8;
-        let to_ds   = fc & 0x0100 != 0;
+        let to_ds = fc & 0x0100 != 0;
         let from_ds = fc & 0x0200 != 0;
 
         let frame_type = match type_bits {
@@ -106,19 +104,19 @@ impl<'a> Dot11Frame<'a> {
 
     pub fn kind(&self) -> FrameKind {
         match (self.frame_type, self.subtype) {
-            (FrameType::Management, FrameSubtype::Beacon)           => FrameKind::Beacon,
-            (FrameType::Management, FrameSubtype::ProbeRequest)     => FrameKind::ProbeRequest,
-            (FrameType::Management, FrameSubtype::ProbeResponse)    => FrameKind::ProbeResponse,
-            (FrameType::Management, FrameSubtype::Authentication)   => FrameKind::Authentication,
+            (FrameType::Management, FrameSubtype::Beacon) => FrameKind::Beacon,
+            (FrameType::Management, FrameSubtype::ProbeRequest) => FrameKind::ProbeRequest,
+            (FrameType::Management, FrameSubtype::ProbeResponse) => FrameKind::ProbeResponse,
+            (FrameType::Management, FrameSubtype::Authentication) => FrameKind::Authentication,
             (FrameType::Management, FrameSubtype::Deauthentication) => FrameKind::Deauthentication,
             (FrameType::Management, FrameSubtype::AssocRequest)
             | (FrameType::Management, FrameSubtype::AssocResponse)
             | (FrameType::Management, FrameSubtype::ReassocRequest)
             | (FrameType::Management, FrameSubtype::ReassocResponse) => FrameKind::Association,
-            (FrameType::Data, _)       => FrameKind::Data,
-            (FrameType::Control, _)    => FrameKind::Control,
+            (FrameType::Data, _) => FrameKind::Data,
+            (FrameType::Control, _) => FrameKind::Control,
             (FrameType::Management, _) => FrameKind::Other,
-            (FrameType::Extension, _)  => FrameKind::Other,
+            (FrameType::Extension, _) => FrameKind::Other,
         }
     }
 
@@ -127,9 +125,9 @@ impl<'a> Dot11Frame<'a> {
     pub fn bssid(&self) -> MacAddr {
         match (self.to_ds, self.from_ds) {
             (false, false) => self.addr3,
-            (false, true)  => self.addr2,
-            (true,  false) => self.addr1,
-            (true,  true)  => self.addr1, // 4-address frame, addr1 is RA
+            (false, true) => self.addr2,
+            (true, false) => self.addr1,
+            (true, true) => self.addr1, // 4-address frame, addr1 is RA
         }
     }
 
@@ -215,9 +213,8 @@ impl<'a> ManagementBody<'a> {
                 0 => {
                     // SSID
                     if !ie.data.is_empty() {
-                        out.ssid = Some(
-                            String::from_utf8_lossy(ie.data).trim_matches('\0').to_string(),
-                        );
+                        out.ssid =
+                            Some(String::from_utf8_lossy(ie.data).trim_matches('\0').to_string());
                     } else {
                         out.ssid = Some(String::new()); // explicit empty
                     }
@@ -254,12 +251,9 @@ impl<'a> ManagementBody<'a> {
         if has_rsn {
             out.encryption.open = false;
             out.encryption.wpa2 = true;
-            if out
-                .encryption
-                .akm
-                .iter()
-                .any(|a| matches!(a, KeyManagement::Sae | KeyManagement::FtSae | KeyManagement::Owe))
-            {
+            if out.encryption.akm.iter().any(|a| {
+                matches!(a, KeyManagement::Sae | KeyManagement::FtSae | KeyManagement::Owe)
+            }) {
                 out.encryption.wpa3 = true;
             }
         } else if has_wpa {
@@ -338,21 +332,29 @@ fn decode_rsn(ie: &[u8], enc: &mut Encryption) {
     enc.group = Cipher::from_ieee(group_oui, ie[off + 3]);
     off += 4;
 
-    if ie.len() < off + 2 { return; }
+    if ie.len() < off + 2 {
+        return;
+    }
     let pcount = LittleEndian::read_u16(&ie[off..off + 2]) as usize;
     off += 2;
     for _ in 0..pcount {
-        if ie.len() < off + 4 { return; }
+        if ie.len() < off + 4 {
+            return;
+        }
         let oui = [ie[off], ie[off + 1], ie[off + 2]];
         enc.pairwise.push(Cipher::from_ieee(oui, ie[off + 3]));
         off += 4;
     }
 
-    if ie.len() < off + 2 { return; }
+    if ie.len() < off + 2 {
+        return;
+    }
     let acount = LittleEndian::read_u16(&ie[off..off + 2]) as usize;
     off += 2;
     for _ in 0..acount {
-        if ie.len() < off + 4 { return; }
+        if ie.len() < off + 4 {
+            return;
+        }
         let oui = [ie[off], ie[off + 1], ie[off + 2]];
         enc.akm.push(KeyManagement::from_ieee(oui, ie[off + 3]));
         off += 4;
@@ -361,24 +363,36 @@ fn decode_rsn(ie: &[u8], enc: &mut Encryption) {
 
 fn decode_wpa1(ie: &[u8], enc: &mut Encryption) {
     // Same layout as RSN but with a WPA1 OUI (00:50:f2) on each cipher suite.
-    if ie.len() < 2 { return; }
+    if ie.len() < 2 {
+        return;
+    }
     let mut off = 2;
-    if ie.len() < off + 4 { return; }
+    if ie.len() < off + 4 {
+        return;
+    }
     enc.group = Cipher::from_ieee([0x00, 0x50, 0xf2], ie[off + 3]);
     off += 4;
-    if ie.len() < off + 2 { return; }
+    if ie.len() < off + 2 {
+        return;
+    }
     let pcount = LittleEndian::read_u16(&ie[off..off + 2]) as usize;
     off += 2;
     for _ in 0..pcount {
-        if ie.len() < off + 4 { return; }
+        if ie.len() < off + 4 {
+            return;
+        }
         enc.pairwise.push(Cipher::from_ieee([0x00, 0x50, 0xf2], ie[off + 3]));
         off += 4;
     }
-    if ie.len() < off + 2 { return; }
+    if ie.len() < off + 2 {
+        return;
+    }
     let acount = LittleEndian::read_u16(&ie[off..off + 2]) as usize;
     off += 2;
     for _ in 0..acount {
-        if ie.len() < off + 4 { return; }
+        if ie.len() < off + 4 {
+            return;
+        }
         enc.akm.push(KeyManagement::from_ieee([0x00, 0x50, 0xf2], ie[off + 3]));
         off += 4;
     }
@@ -393,13 +407,7 @@ mod tests {
     fn round_trip_beacon_ssid_and_bssid() {
         // Build a beacon with a known BSSID and SSID, then parse it back.
         let bssid: MacAddr = "aa:bb:cc:dd:ee:ff".parse().unwrap();
-        let frame = builder::build_beacon(
-            bssid,
-            "TestNetwork",
-            6,
-            100,
-            false,
-        );
+        let frame = builder::build_beacon(bssid, "TestNetwork", 6, 100, false);
         // builder returns a raw 802.11 frame, no radiotap.
         let parsed = Dot11Frame::parse(&frame).unwrap();
         assert_eq!(parsed.frame_type, FrameType::Management);

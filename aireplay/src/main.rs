@@ -13,9 +13,7 @@
 use std::time::Duration;
 
 use airscope_core::MacAddr;
-use airscope_wifi::builder::{
-    build_deauth, build_probe_request, wrap_radiotap, ReasonCode,
-};
+use airscope_wifi::builder::{build_deauth, build_probe_request, wrap_radiotap, ReasonCode};
 use airscope_wifi::capture::live::LiveCapture;
 use airscope_wifi::{Dot11Frame, ManagementBody};
 use anyhow::{anyhow, Context, Result};
@@ -114,11 +112,7 @@ fn main() -> Result<()> {
 }
 
 fn transmit_or_print(cli: &Cli, frame: &[u8], label: &str) -> Result<()> {
-    println!(
-        "{label}: {} bytes   {}",
-        frame.len(),
-        hex::encode(frame)
-    );
+    println!("{label}: {} bytes   {}", frame.len(), hex::encode(frame));
     let Some(iface) = cli.interface.as_ref() else {
         if cli.count > 1 {
             println!("(not injecting - supply --interface to actually send)");
@@ -147,18 +141,14 @@ fn transmit_or_print(cli: &Cli, frame: &[u8], label: &str) -> Result<()> {
 
 fn inspect(hex: &str) -> Result<()> {
     let cleaned: String = hex.chars().filter(|c| c.is_ascii_hexdigit()).collect();
-    let bytes =
-        hex::decode(&cleaned).map_err(|e| anyhow!("not valid hex: {e}"))?;
+    let bytes = hex::decode(&cleaned).map_err(|e| anyhow!("not valid hex: {e}"))?;
     let frame = Dot11Frame::parse(&bytes).map_err(|e| anyhow!(e.to_string()))?;
     println!("frame.type     = {:?}", frame.frame_type);
     println!("frame.subtype  = {:?}", frame.subtype);
     println!("frame.addr1    = {}", frame.addr1);
     println!("frame.addr2    = {}", frame.addr2);
     println!("frame.addr3    = {}", frame.addr3);
-    println!(
-        "frame.seq/frag = {}/{}",
-        frame.sequence, frame.fragment
-    );
+    println!("frame.seq/frag = {}/{}", frame.sequence, frame.fragment);
     if let Some(body) = frame.management_body() {
         print_body(&body);
     }
@@ -192,4 +182,3 @@ fn map_reason(code: u16) -> ReasonCode {
         _ => ReasonCode::Unspecified,
     }
 }
-

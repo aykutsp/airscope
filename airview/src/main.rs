@@ -11,9 +11,7 @@ use std::path::PathBuf;
 use airscope_core::FrameKind;
 use airscope_ui::{status_bar, TerminalGuard, Theme};
 use airscope_wifi::{
-    capture::{
-        CapturedPacket, PcapFileReader, LINKTYPE_IEEE802_11, LINKTYPE_IEEE802_11_RADIOTAP,
-    },
+    capture::{CapturedPacket, PcapFileReader, LINKTYPE_IEEE802_11, LINKTYPE_IEEE802_11_RADIOTAP},
     frame::{Dot11Frame, ManagementBody},
     radiotap::{RadiotapHeader, RadiotapInfo},
 };
@@ -104,9 +102,7 @@ fn decode_packet(linktype: u32, index: usize, pkt: &CapturedPacket) -> Option<De
         _ => return None,
     };
     let frame = Dot11Frame::parse(body).ok()?;
-    let ssid = frame
-        .management_body()
-        .and_then(|b: ManagementBody<'_>| b.decode().ssid);
+    let ssid = frame.management_body().and_then(|b: ManagementBody<'_>| b.decode().ssid);
     Some(DecodedRow {
         index,
         timestamp_us: pkt.timestamp_micros,
@@ -125,25 +121,22 @@ fn decode_packet(linktype: u32, index: usize, pkt: &CapturedPacket) -> Option<De
 fn kind_matches(filter: &str, kind: FrameKind) -> bool {
     match filter.to_ascii_lowercase().as_str() {
         "any" | "all" | "" => true,
-        "beacon"           => matches!(kind, FrameKind::Beacon),
-        "probe_req"        => matches!(kind, FrameKind::ProbeRequest),
-        "probe_resp"       => matches!(kind, FrameKind::ProbeResponse),
-        "probe"            => matches!(kind, FrameKind::ProbeRequest | FrameKind::ProbeResponse),
-        "auth"             => matches!(kind, FrameKind::Authentication),
-        "deauth"           => matches!(kind, FrameKind::Deauthentication),
-        "assoc"            => matches!(kind, FrameKind::Association),
-        "data"             => matches!(kind, FrameKind::Data | FrameKind::Qos),
+        "beacon" => matches!(kind, FrameKind::Beacon),
+        "probe_req" => matches!(kind, FrameKind::ProbeRequest),
+        "probe_resp" => matches!(kind, FrameKind::ProbeResponse),
+        "probe" => matches!(kind, FrameKind::ProbeRequest | FrameKind::ProbeResponse),
+        "auth" => matches!(kind, FrameKind::Authentication),
+        "deauth" => matches!(kind, FrameKind::Deauthentication),
+        "assoc" => matches!(kind, FrameKind::Association),
+        "data" => matches!(kind, FrameKind::Data | FrameKind::Qos),
         "ctrl" | "control" => matches!(kind, FrameKind::Control),
-        _                  => true,
+        _ => true,
     }
 }
 
 fn print_text(rows: &[DecodedRow]) {
     println!("# airview dump ({} frames)", rows.len());
-    println!(
-        "{:>5}  {:<5}  {:>4}  {:<17}  {:<17}  ESSID",
-        "#", "KIND", "SIG", "BSSID", "ADDR2"
-    );
+    println!("{:>5}  {:<5}  {:>4}  {:<17}  {:<17}  ESSID", "#", "KIND", "SIG", "BSSID", "ADDR2");
     for r in rows.iter().take(200) {
         println!(
             "{:>5}  {:<5}  {:>4}  {:<17}  {:<17}  {}",
@@ -238,9 +231,7 @@ fn draw(f: &mut Frame<'_>, state: &mut TuiState) {
         Line::from(vec![
             Span::styled(
                 "airview ",
-                Style::default()
-                    .fg(state.theme.accent)
-                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD),
             ),
             Span::styled(
                 format!("• {}", state.path.display()),
@@ -252,10 +243,7 @@ fn draw(f: &mut Frame<'_>, state: &mut TuiState) {
                 Style::default().fg(Color::Rgb(220, 220, 230)),
             ),
         ]),
-        Line::from(Span::styled(
-            "offline 802.11 decoder",
-            Style::default().fg(state.theme.muted),
-        )),
+        Line::from(Span::styled("offline 802.11 decoder", Style::default().fg(state.theme.muted))),
     ])
     .block(
         Block::default()
@@ -268,22 +256,16 @@ fn draw(f: &mut Frame<'_>, state: &mut TuiState) {
     draw_table(f, outer[1], state);
     draw_detail(f, outer[2], state);
 
-    let hints: &[(&str, &str)] = &[
-        ("↑/↓", "navigate"),
-        ("g/G", "top/bottom"),
-        ("q", "quit"),
-    ];
+    let hints: &[(&str, &str)] = &[("↑/↓", "navigate"), ("g/G", "top/bottom"), ("q", "quit")];
     f.render_widget(status_bar(hints, &state.theme), outer[3]);
 }
 
 fn draw_table(f: &mut Frame<'_>, area: Rect, state: &mut TuiState) {
     let header = Row::new(
-        ["#", "TIME (s)", "LEN", "SIG", "KIND", "BSSID", "ADDR2", "ESSID"]
-            .iter()
-            .map(|h| {
-                Cell::from(*h)
-                    .style(Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD))
-            }),
+        ["#", "TIME (s)", "LEN", "SIG", "KIND", "BSSID", "ADDR2", "ESSID"].iter().map(|h| {
+            Cell::from(*h)
+                .style(Style::default().fg(state.theme.accent).add_modifier(Modifier::BOLD))
+        }),
     )
     .style(Style::default().bg(state.theme.header_bg));
 
@@ -322,32 +304,18 @@ fn draw_table(f: &mut Frame<'_>, area: Rect, state: &mut TuiState) {
         ],
     )
     .header(header)
-    .block(
-        Block::default()
-            .borders(Borders::ALL)
-            .title(" frames "),
-    )
-    .row_highlight_style(
-        Style::default()
-            .bg(Color::Rgb(35, 42, 60))
-            .add_modifier(Modifier::BOLD),
-    )
+    .block(Block::default().borders(Borders::ALL).title(" frames "))
+    .row_highlight_style(Style::default().bg(Color::Rgb(35, 42, 60)).add_modifier(Modifier::BOLD))
     .highlight_symbol("▶ ");
 
     f.render_stateful_widget(t, area, &mut state.table);
 }
 
 fn draw_detail(f: &mut Frame<'_>, area: Rect, state: &TuiState) {
-    let selected = state
-        .table
-        .selected()
-        .and_then(|i| state.rows.get(i));
+    let selected = state.table.selected().and_then(|i| state.rows.get(i));
 
     let text: Vec<Line<'_>> = match selected {
-        None => vec![Line::from(Span::styled(
-            "(empty)",
-            Style::default().fg(state.theme.muted),
-        ))],
+        None => vec![Line::from(Span::styled("(empty)", Style::default().fg(state.theme.muted)))],
         Some(row) => {
             let mut lines = Vec::new();
             lines.push(Line::from(vec![
@@ -382,11 +350,7 @@ fn draw_detail(f: &mut Frame<'_>, area: Rect, state: &TuiState) {
     };
 
     let p = Paragraph::new(text)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(" selected frame "),
-        )
+        .block(Block::default().borders(Borders::ALL).title(" selected frame "))
         .wrap(Wrap { trim: false });
     f.render_widget(p, area);
 }

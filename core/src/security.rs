@@ -19,14 +19,14 @@ impl Cipher {
         // 00-0f-ac = IEEE 802.11i
         if oui == [0x00, 0x0f, 0xac] {
             return match suite {
-                1  => Cipher::Wep40,
-                2  => Cipher::Tkip,
-                4  => Cipher::Ccmp128,
-                5  => Cipher::Wep104,
-                8  => Cipher::Gcmp128,
-                9  => Cipher::Gcmp256,
+                1 => Cipher::Wep40,
+                2 => Cipher::Tkip,
+                4 => Cipher::Ccmp128,
+                5 => Cipher::Wep104,
+                8 => Cipher::Gcmp128,
+                9 => Cipher::Gcmp256,
                 10 => Cipher::Ccmp256,
-                _  => Cipher::Unknown,
+                _ => Cipher::Unknown,
             };
         }
         Cipher::Unknown
@@ -34,10 +34,10 @@ impl Cipher {
 
     pub fn short(&self) -> &'static str {
         match self {
-            Cipher::None    => "-",
-            Cipher::Wep40   => "WEP40",
-            Cipher::Wep104  => "WEP104",
-            Cipher::Tkip    => "TKIP",
+            Cipher::None => "-",
+            Cipher::Wep40 => "WEP40",
+            Cipher::Wep104 => "WEP104",
+            Cipher::Tkip => "TKIP",
             Cipher::Ccmp128 => "CCMP",
             Cipher::Ccmp256 => "CCMP256",
             Cipher::Gcmp128 => "GCMP",
@@ -65,14 +65,14 @@ impl KeyManagement {
     pub fn from_ieee(oui: [u8; 3], suite: u8) -> Self {
         if oui == [0x00, 0x0f, 0xac] {
             return match suite {
-                1  => KeyManagement::Eap,
-                2  => KeyManagement::Psk,
-                3  => KeyManagement::FtEap,
-                4  => KeyManagement::FtPsk,
-                8  => KeyManagement::Sae,
-                9  => KeyManagement::FtSae,
+                1 => KeyManagement::Eap,
+                2 => KeyManagement::Psk,
+                3 => KeyManagement::FtEap,
+                4 => KeyManagement::FtPsk,
+                8 => KeyManagement::Sae,
+                9 => KeyManagement::FtSae,
                 18 => KeyManagement::Owe,
-                _  => KeyManagement::Unknown,
+                _ => KeyManagement::Unknown,
             };
         }
         KeyManagement::Unknown
@@ -80,14 +80,14 @@ impl KeyManagement {
 
     pub fn short(&self) -> &'static str {
         match self {
-            KeyManagement::None    => "-",
-            KeyManagement::Psk     => "PSK",
-            KeyManagement::Eap     => "EAP",
-            KeyManagement::FtPsk   => "FT/PSK",
-            KeyManagement::FtEap   => "FT/EAP",
-            KeyManagement::Sae     => "SAE",
-            KeyManagement::FtSae   => "FT/SAE",
-            KeyManagement::Owe     => "OWE",
+            KeyManagement::None => "-",
+            KeyManagement::Psk => "PSK",
+            KeyManagement::Eap => "EAP",
+            KeyManagement::FtPsk => "FT/PSK",
+            KeyManagement::FtEap => "FT/EAP",
+            KeyManagement::Sae => "SAE",
+            KeyManagement::FtSae => "FT/SAE",
+            KeyManagement::Owe => "OWE",
             KeyManagement::Unknown => "?",
         }
     }
@@ -125,11 +125,17 @@ impl Default for Encryption {
 impl Encryption {
     /// The short family string shown in the `ENC` column.
     pub fn family(&self) -> &'static str {
-        if self.wpa3 { "WPA3" }
-        else if self.wpa2 { "WPA2" }
-        else if self.wpa  { "WPA"  }
-        else if self.wep  { "WEP"  }
-        else { "OPN" }
+        if self.wpa3 {
+            "WPA3"
+        } else if self.wpa2 {
+            "WPA2"
+        } else if self.wpa {
+            "WPA"
+        } else if self.wep {
+            "WEP"
+        } else {
+            "OPN"
+        }
     }
 }
 

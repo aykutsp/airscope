@@ -56,24 +56,14 @@ impl PcapFileReader {
         let (nanosecond, little_endian) = match magic {
             PCAP_MAGIC_LE => (false, true),
             PCAP_MAGIC_NS => (true, true),
-            _ => {
-                return Err(Error::Parse(format!(
-                    "pcap: unknown magic 0x{:08x}",
-                    magic
-                )))
-            }
+            _ => return Err(Error::Parse(format!("pcap: unknown magic 0x{:08x}", magic))),
         };
         if !little_endian {
             return Err(Error::Unsupported("big-endian pcap".into()));
         }
         let snaplen = LittleEndian::read_u32(&header[16..20]);
         let linktype = LittleEndian::read_u32(&header[20..24]);
-        Ok(Self {
-            reader,
-            nanosecond_precision: nanosecond,
-            linktype,
-            snaplen,
-        })
+        Ok(Self { reader, nanosecond_precision: nanosecond, linktype, snaplen })
     }
 
     /// Read the next packet, or `Ok(None)` at EOF.
@@ -90,9 +80,7 @@ impl PcapFileReader {
         let _orig_len = LittleEndian::read_u32(&rec[12..16]);
 
         if incl_len > self.snaplen as usize * 2 {
-            return Err(Error::Parse(format!(
-                "pcap: record larger than expected: {incl_len}"
-            )));
+            return Err(Error::Parse(format!("pcap: record larger than expected: {incl_len}")));
         }
 
         let mut data = vec![0u8; incl_len];
@@ -104,10 +92,7 @@ impl PcapFileReader {
             ts_sec * 1_000_000 + ts_frac
         };
 
-        Ok(Some(CapturedPacket {
-            timestamp_micros: ts_micros,
-            data,
-        }))
+        Ok(Some(CapturedPacket { timestamp_micros: ts_micros, data }))
     }
 
     /// Drain the file into a Vec, short-circuiting on the first error.
@@ -150,7 +135,7 @@ impl PcapFileWriter {
         use std::io::Write;
         let mut rec = [0u8; 16];
         let ts_sec = (pkt.timestamp_micros / 1_000_000) as u32;
-        let ts_us  = (pkt.timestamp_micros % 1_000_000) as u32;
+        let ts_us = (pkt.timestamp_micros % 1_000_000) as u32;
         LittleEndian::write_u32(&mut rec[0..4], ts_sec);
         LittleEndian::write_u32(&mut rec[4..8], ts_us);
         LittleEndian::write_u32(&mut rec[8..12], pkt.data.len() as u32);
@@ -181,15 +166,10 @@ pub mod live {
     }
 
     pub fn list_interfaces() -> Result<Vec<LiveInterface>> {
-        let devs = pcap::Device::list()
-            .map_err(|e| Error::Capture(format!("list: {e}")))?;
+        let devs = pcap::Device::list().map_err(|e| Error::Capture(format!("list: {e}")))?;
         Ok(devs
             .into_iter()
-            .map(|d| LiveInterface {
-                name: d.name,
-                description: d.desc,
-                is_up: d.flags.is_up(),
-            })
+            .map(|d| LiveInterface { name: d.name, description: d.desc, is_up: d.flags.is_up() })
             .collect())
     }
 
@@ -221,9 +201,7 @@ pub mod live {
 
         /// Apply a BPF filter to the capture.
         pub fn set_filter(&mut self, filter: &str) -> Result<()> {
-            self.cap
-                .filter(filter, true)
-                .map_err(|e| Error::Capture(e.to_string()))
+            self.cap.filter(filter, true).map_err(|e| Error::Capture(e.to_string()))
         }
 
         /// Pull the next packet. Returns `Ok(None)` on a timeout so
@@ -243,9 +221,7 @@ pub mod live {
         /// Send a raw frame on the interface (injection). The caller is
         /// responsible for including the radiotap header when needed.
         pub fn inject(&mut self, frame: &[u8]) -> Result<()> {
-            self.cap
-                .sendpacket(frame)
-                .map_err(|e| Error::Injection(e.to_string()))
+            self.cap.sendpacket(frame).map_err(|e| Error::Injection(e.to_string()))
         }
     }
 }

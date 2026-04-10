@@ -57,17 +57,13 @@ pub fn build_probe_request(source: MacAddr, ssid: &str) -> Vec<u8> {
     out.extend_from_slice(&[0x40, 0x00]);
     out.extend_from_slice(&[0x00, 0x00]); // duration
     out.extend_from_slice(MacAddr::BROADCAST.bytes()); // dst
-    out.extend_from_slice(source.bytes());             // src
+    out.extend_from_slice(source.bytes()); // src
     out.extend_from_slice(MacAddr::BROADCAST.bytes()); // bssid
-    out.extend_from_slice(&[0x00, 0x00]);              // seq
+    out.extend_from_slice(&[0x00, 0x00]); // seq
 
     push_ie(&mut out, 0, ssid.as_bytes());
     // Supported rates (Tag 1): 1, 2, 5.5, 11, 6, 9, 12, 18 Mbps
-    push_ie(
-        &mut out,
-        1,
-        &[0x82, 0x84, 0x8b, 0x96, 0x0c, 0x12, 0x18, 0x24],
-    );
+    push_ie(&mut out, 1, &[0x82, 0x84, 0x8b, 0x96, 0x0c, 0x12, 0x18, 0x24]);
     out
 }
 
@@ -88,9 +84,9 @@ pub fn build_beacon(
     out.extend_from_slice(&[0x80, 0x00]);
     out.extend_from_slice(&[0x00, 0x00]);
     out.extend_from_slice(MacAddr::BROADCAST.bytes()); // dst
-    out.extend_from_slice(bssid.bytes());              // src
-    out.extend_from_slice(bssid.bytes());              // bssid
-    out.extend_from_slice(&[0x00, 0x00]);              // seq
+    out.extend_from_slice(bssid.bytes()); // src
+    out.extend_from_slice(bssid.bytes()); // bssid
+    out.extend_from_slice(&[0x00, 0x00]); // seq
 
     // Timestamp placeholder (firmware fills it, but parsers expect 8 bytes).
     out.extend_from_slice(&[0u8; 8]);
@@ -109,13 +105,9 @@ pub fn build_beacon(
     out.extend_from_slice(&cap_buf);
 
     push_ie(&mut out, 0, ssid.as_bytes()); // SSID
-    push_ie(
-        &mut out,
-        1,
-        &[0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c],
-    ); // Supported Rates
+    push_ie(&mut out, 1, &[0x82, 0x84, 0x8b, 0x96, 0x24, 0x30, 0x48, 0x6c]); // Supported Rates
     push_ie(&mut out, 3, &[channel]); // DS Parameter Set
-    // TIM (Tag 5): DTIM count=0, DTIM period=1, bitmap control=0, bitmap=0
+                                      // TIM (Tag 5): DTIM count=0, DTIM period=1, bitmap control=0, bitmap=0
     push_ie(&mut out, 5, &[0x00, 0x01, 0x00, 0x00]);
 
     out
@@ -156,13 +148,7 @@ mod tests {
 
     #[test]
     fn beacon_starts_with_management_subtype_marker() {
-        let b = build_beacon(
-            "aa:bb:cc:dd:ee:ff".parse().unwrap(),
-            "demo",
-            6,
-            100,
-            false,
-        );
+        let b = build_beacon("aa:bb:cc:dd:ee:ff".parse().unwrap(), "demo", 6, 100, false);
         assert_eq!(b[0], 0x80); // beacon
     }
 }
