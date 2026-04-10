@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/aykutsp/airscope/actions"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/aykutsp/airscope/ci.yml?branch=main&style=flat-square&label=ci&logo=github"></a>
+  <a href="https://github.com/aykutsp/airscope/actions"><img alt="ci" src="https://img.shields.io/github/actions/workflow/status/aykutsp/airscope/ci.yml?branch=master&style=flat-square&label=ci&logo=github"></a>
   <a href="https://www.rust-lang.org/"><img alt="rust" src="https://img.shields.io/badge/rust-1.75%2B-dea584?style=flat-square&logo=rust&logoColor=white"></a>
   <img alt="platforms" src="https://img.shields.io/badge/platform-linux%20%7C%20macos%20%7C%20windows-555?style=flat-square">
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square"></a>
