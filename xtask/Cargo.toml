@@ -13,5 +13,5 @@ description           = "in-tree build scripts for the Airscope workspace"
 [dependencies]
 anyhow        = { workspace = true }
 clap          = { workspace = true }
-clap_complete = "4.5"
+clap_complete = "4.6"
 clap_mangen   = "0.2"
